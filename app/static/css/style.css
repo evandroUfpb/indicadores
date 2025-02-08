@@ -1,0 +1,116 @@
+.chart-container {
+    height: 300px;
+    margin-top: 1rem;
+}
+
+.card {
+    height: 100%;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+.lead {
+    color: #666;
+}
+
+main {
+    padding: 2rem 0;
+}
+
+.navbar {
+    margin-bottom: 2rem;
+}
+
+/* Estilos gerais */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.content {
+    flex: 1 0 auto;
+}
+
+/* Estilos do rodapé */
+.footer {
+    flex-shrink: 0;
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+.footer img {
+    transition: transform 0.3s ease;
+}
+
+.footer img:hover {
+    transform: scale(1.1);
+}
+
+.chart-container {
+    height: 300px;
+    margin-top: 1rem;
+    position: relative;
+}
+
+.chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+ /* Estilos para os botões de redes sociais */
+ .btn-outline-dark {
+    border-color: #2c3e50;
+    color: #2c3e50;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-dark:hover {
+    background-color: #2c3e50;
+    color: #fff;
+    transform: scale(1.05);
+}
+
+/* Estilos específicos para LinkedIn */
+.btn-linkedin {
+    background-color: #0077B5;
+    color: white;
+    border: none;
+}
+
+.btn-linkedin:hover {
+    background-color: #005582;
+    color: #f0f0f0;
+    transform: scale(1.05);
+}
+
+/* Estilos específicos para GitHub */
+.btn-github {
+    background-color: #333;
+    color: white;
+    border: none;
+}
+
+.btn-github:hover {
+    background-color: #555;
+    color: #f0f0f0;
+    transform: scale(1.05);
+}
+
+/* Estilos específicos para Email */
+.btn-email {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+}
+
+.btn-email:hover {
+    background-color: #a71d2a;
+    color: #f0f0f0;
+    transform: scale(1.05);
+}

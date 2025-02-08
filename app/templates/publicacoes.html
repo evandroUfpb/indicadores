@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-center mb-5">Publicações/Eventos</h1>
+    
+    <div class="row mb-5">
+        <!-- Primeiro conteúdo - Livro -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-img-top text-center p-3">
+                    <img src="{{ url_for('static', filename='img/livro_polari.png') }}" 
+                         alt="Capa do Livro" 
+                         style="max-width: 100%; max-height: 300px; object-fit: contain;">
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Paraíba: Desafio ao Desenvolvimento (Rômulo Polari)</h5>
+                    <p class="card-text">O documento é uma espécie de planta baixa complexa do desenvolvimento da Paraíba. Nele estão os elementos
+                        básicos e complementares que envolvem diversas etapas desse processo de construção.</p>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('static', filename='img/Paraíba-Desafios-ao-Desenvolvimento-Final.pdf') }}" 
+                           class="btn btn-primary" 
+                           download>
+                            <i class="fas fa-download"></i> Baixar PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Segundo conteúdo - Vídeo -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="embed-responsive embed-responsive-16by9 d-flex justify-content-center align-items-center p-3">
+                    <iframe 
+                        class="card-img-top embed-responsive-item" 
+                        src="https://www.youtube.com/embed/9NUA4K5WVoU" 
+                        style="max-width: 100%; max-height: 300px; width: 300px; height: 200px;"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title text-center">Programa Economia em Alta: As Perspectivas econômicas para 2025</h5>
+                    <p class="card-text text-center">Entrevista com o Economista Francisco Barros, sócio do Forúm Celso Furtado de Desenvolvimento da Paraíba.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Terceiro conteúdo - Artigo -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-img-top text-center p-3">
+                    <img src="{{ url_for('static', filename='img/mapa_pb.png') }}" 
+                         alt="Imagem do Artigo" 
+                         style="max-width: 100%; max-height: 300px; object-fit: contain;">
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Desigualdade de Renda: Uma análise para as mesorregiões e microrregiões do Estado da Paraíbado</h5>
+                    <p class="card-text">O presente estudo teve como propósito analisar as desigualdades de renda entre os municípios, as mesorregiões e as microrregiões
+                        do estado da Paraíba, para os anos de 2010 e 2021. Analisou-se a distribuição espacial do PIB e do PIB per capita, medindo a concentração e dispersão
+                        pelo método do Coeficiente de Variação Ponderado de Williamson.<a href="https://evandroufpb.github.io/cw_paraiba/index.html" 
+                        class="text-primary" 
+                        target="_blank"> Acesse o texto aqui...</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Seção de apresentação -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Sobre as Publicações</h3>
+                    <p class="card-text">
+                        Aqui você encontrará uma seleção de publicações, incluindo livros, artigos e 
+                        conteúdos em vídeo sobre o desenvolvimento regional e da Paraíba. Meu objetivo é 
+                        compartilhar conhecimentos e insights sobre os desafios para o desenvolvimento
+                        do Nordeste e, em especial, da Paraíba.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

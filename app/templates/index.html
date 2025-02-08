@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 text-center bg-light py-5 rounded shadow-sm">
+        <h1 class="display-4 text-primary mb-4" style="font-weight: 300; color: #2c3e50 !important;">
+            Bem-vindo ao Blog de Evandro Farias
+        </h1>
+        <div class="container">
+            <p class="lead text-muted" style="line-height: 1.6; max-width: 800px; margin: 0 auto; font-weight: 300;">
+                Explore análises e visualizações dos principais indicadores socioeconômicos do Brasil, 
+                Nordeste e Paraíba. Utilizamos dados de fontes oficiais como SIDRA (IBGE), IPEA Data 
+                e Banco Central para fornecer insights precisos e atualizados.
+            </p>
+            <div class="mt-4">
+                <a href="https://www.linkedin.com/in/evandro-farias-625939a2"
+                    class="btn btn-outline-dark me-3">
+                    <i class="fab fa-linkedin me-2"></i> LinkedIn</a>  
+                <a href="https://github.com/evandroUfpb" 
+                    class="btn btn-outline-dark me-3">
+                    <i class="fab fa-github"></i> GitHub</a>    
+                <a href="mailto:evandro.farias@academico.ufpb.br" 
+                   class="btn btn-outline-dark me-3">
+                    <i class="far fa-envelope me-2"></i>Contato
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title mb-0">PIB do Brasil</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="pibChart" class="chart-container"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title mb-0">Taxa de Desocupação</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="desocupacaoChart" class="chart-container"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title mb-0">IPCA</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="ipcaChart" class="chart-container"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .chart-container {
+        width: 100%;
+        height: 45vh;
+        position: relative;
+    }
+    
+    @media (max-width: 768px) {
+        .chart-container {
+            height: 250px;
+        }
+    }
+    </style>
+    
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Função para buscar e renderizar dados do PIB
+        function fetchPIBData() {
+            fetch('/api/pib_db')
+                .then(response => {
+                    console.log('Resposta do PIB:', response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Dados do PIB recebidos:', data);
+                    
+                    // Verificar se há dados
+                    if (!data.dates || data.dates.length === 0) {
+                        console.error('Nenhum dado de PIB encontrado');
+                        document.getElementById('pibChart').innerHTML = 'Sem dados de PIB disponíveis';
+                        return;
+                    }
+
+                    const ctx = document.getElementById('pibChart').getContext('2d');
+                    
+                    // Verificar se o contexto foi criado
+                    if (!ctx) {
+                        console.error('Não foi possível criar o contexto do gráfico de PIB');
+                        return;
+                    }
+
+                    window.pibChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.dates,
+                            datasets: [{
+                                label: '',
+                                data: data.values,
+                                borderColor: 'rgb(75, 192, 192)',
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderWidth: 2,
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Taxa de Variação Trimestral'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    title: {
+                                        display: true,
+                                        text: data.unit
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro completo ao buscar dados do PIB:', error);
+                    document.getElementById('pibChart').innerHTML = 'Erro ao carregar dados do PIB';
+                });
+        }
+
+        // Função para buscar e renderizar dados da Desocupação
+        function fetchDesocupacaoData() {
+            fetch('/api/desocupacao')
+                .then(response => {
+                    console.log('Resposta da Desocupação:', response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Dados da Desocupação recebidos:', data);
+                    
+                    // Verificar se há dados
+                    if (!data.dates || data.dates.length === 0) {
+                        console.error('Nenhum dado de Desocupação encontrado');
+                        document.getElementById('desocupacaoChart').innerHTML = 'Sem dados de Desocupação disponíveis';
+                        return;
+                    }
+
+                    const ctx = document.getElementById('desocupacaoChart').getContext('2d');
+                    
+                    // Verificar se o contexto foi criado
+                    if (!ctx) {
+                        console.error('Não foi possível criar o contexto do gráfico de Desocupação');
+                        return;
+                    }
+
+                    window.desocupacaoChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.dates,
+                            datasets: [{
+                                label: '',
+                                data: data.values,
+                                //borderColor: 'rgb(75, 192, 192)',
+                                borderColor: 'rgb(70, 130, 180)',
+                                backgroundColor: 'rgb(70, 130, 180, 0.2)',
+                                borderWidth: 2,
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Taxa de Desocupação Trimestral'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    title: {
+                                        display: true,
+                                        text: data.unit
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro completo ao buscar dados da Desocupação:', error);
+                    document.getElementById('desocupacaoChart').innerHTML = 'Erro ao carregar dados da Desocupação';
+                });
+        }
+
+        // Função para buscar e renderizar dados da IPCA
+        function fetchIpcaData() {
+            fetch('/api/ipca')
+                .then(response => {
+                    console.log('Resposta da Ipca:', response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Dados da Ipca recebidos:', data);
+                    
+                    // Verificar se há dados
+                    if (!data.dates || data.dates.length === 0) {
+                        console.error('Nenhum dado de Ipca encontrado');
+                        document.getElementById('ipcaChart').innerHTML = 'Sem dados do Ipca disponíveis';
+                        return;
+                    }
+
+                    const ctx = document.getElementById('ipcaChart').getContext('2d');
+                    
+                    // Verificar se o contexto foi criado
+                    if (!ctx) {
+                        console.error('Não foi possível criar o contexto do gráfico do Ipca');
+                        return;
+                    }
+
+                    // Converter datas para formato mais legível
+                    const formattedLabels = data.dates.map(date => {
+                        const year = date.substring(0, 4);
+                        const month = date.substring(4);
+                        return `${month}/${year}`;
+                    });
+
+                    window.ipcaChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: formattedLabels,
+                            datasets: [{
+                                label: 'IPCA',
+                                data: data.values,
+                                borderColor: 'rgb(135,206,250)',
+                                backgroundColor: 'rgb(135,206,250), 0.2)',
+                                borderWidth: 2,
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'IPCA - Mensal'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    title: {
+                                        display: true,
+                                        text: data.unit
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro completo ao buscar dados do IPCA:', error);
+                    document.getElementById('ipcaChart').innerHTML = 'Erro ao carregar dados do Ipca';
+                });
+        }
+
+        // Chamar as funções para buscar e renderizar dados
+        fetchPIBData();
+        fetchDesocupacaoData();
+        fetchIpcaData();
+    });
+</script>
+
+{% endblock %}

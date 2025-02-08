@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h1 class="text-center mb-0">Sobre o Autor</h1>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <img src="https://avatars.githubusercontent.com/u/seu-username" 
+                             alt="Evandro Farias" 
+                             class="rounded-circle mb-3" 
+                             style="width: 200px; height: 200px; object-fit: cover;">
+                        <h2>Evandro Farias</h2>
+                        <p class="text-muted">Economista | Pesquisador | Desenvolvedor</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h3>Formação Acadêmica</h3>
+                        <ul class="list-unstyled">
+                            <li>
+                                <strong>Graduação em Economia</strong><br>
+                                Universidade Federal da Paraíba (UFPB)
+                            </li>
+                            <li>
+                                <strong>Mestrado em Organizações Aprendentes</strong><br>
+                                Universidade Federal da Paraíba (UFPB)
+                            </li>
+                            <li class="mt-2">
+                                <strong>Pesquisador</strong><br>
+                                Grupo de Pesquisa em Economia Regional e Urbana <p>
+                                Membro do Fórum Celso Furtado de Desenvolvimento da Paraíba
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h3>Interesses de Pesquisa</h3>
+                        <span class="badge bg-secondary me-2">Economia Regional</span>
+                        <span class="badge bg-secondary me-2">Desenvolvimento Econômico</span>
+                        <span class="badge bg-secondary me-2">Análise de Dados</span>
+                        <span class="badge bg-secondary me-2">Python</span>
+                        <span class="badge bg-secondary me-2">Visualização de Dados</span>
+                    </div>
+                    
+                    <div class="text-center">
+                        <h3>Contato</h3>
+                        <div class="d-flex justify-content-center">
+                            <a href="https://www.linkedin.com/in/evandro-farias-625939a2"
+                            class="btn btn-outline-dark me-3">
+                            <i class="fab fa-linkedin"></i> LinkedIn</a>    
+                            <a href="https://github.com/evandroUfpb" 
+                            class="btn btn-outline-dark me-3">
+                            <i class="fab fa-github"></i> GitHub
+                            </a>
+                            <a href="mailto:evandro.farias@academico.ufpb.br" 
+                            class="btn btn-outline-dark me-3">
+                            <i class="far fa-envelope"></i> E-mail
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

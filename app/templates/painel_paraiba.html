@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Painel com indicadores da Paraíba</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="card-title mb-0">PIB da Paraíba</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="pibPBChartFull" class="chart-container" style="width: 100%; height: 400px;"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="card-title mb-0">Saldo da Balança Comerical da Paraíba</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="BcpbChartFull" class="chart-container" style="width: 100%; height: 400px;"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="card-title mb-0">Taxa de Desocupação da Paraíba</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="desocupacaoPbChartFull" class="chart-container" style="width: 100%; height: 400px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/paineis_charts.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔍 Verificando elementos do DOM:');
+        document.querySelectorAll('canvas').forEach(canvas => {
+            console.log(`Canvas encontrado: ${canvas.id}`);
+        });
+    
+        console.log('Chamando funções de fetch:');
+        fetchPIBPBData();
+        fetchBcpbData();
+        fetchDesocupacaoPbData();
+    
+        // Log adicional para verificar a função
+        console.log('Função fetchDesocupacaoPbData:', fetchDesocupacaoPbData);
+    });
+    </script>
+{% endblock %}
+

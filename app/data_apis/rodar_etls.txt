@@ -1,0 +1,1 @@
+python -c "from app.data_apis.etl_pib import etl_pib_job; etl_pib_job()"
