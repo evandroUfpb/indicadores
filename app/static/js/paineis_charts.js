@@ -1,41 +1,20 @@
-// Função utilitária para formatar labels
-function formatChartLabels(dates, formatType = 'default') {
+
+function formatChartLabels(dates, formatType = 'trimester') {
     console.log('Formatando labels:', dates, formatType);
-    console.log('Primeiro elemento das datas:', dates[0]);
-    console.log('Último elemento das datas:', dates[dates.length - 1]);
-
-    // Função para extrair ano de uma data
-    const extractYear = (dateStr) => {
-        const dateObj = new Date(dateStr);
-        const year = dateStr.split('-')[0];
-        // const year = dateObj.getFullYear();
-        console.log(`Extraindo ano de ${dateStr}: ${year}`);
-        return year.toString();
-    };
-
-    // Mapear datas para anos reais
-    const yearLabels = dates.map(extractYear);
-
-    console.log('Anos extraídos:', yearLabels);
-    console.log('Número de datas:', dates.length);
-    console.log('Número de anos:', yearLabels.length);
-
-    // Adicionar log para verificar a origem dos anos
-    console.log('Origem dos anos:', yearLabels.map((year, index) => `${year} (de ${dates[index]})`));
 
     switch(formatType) {
         case 'yearOnly':
-            // Retornar apenas os anos dos dados reais
-            return yearLabels;
+            return dates.map(date => date.substring(0, 4));
         
         case 'trimester':
-            // Lógica para formatação de trimestres
             return dates.map(date => {
-                const dateObj = new Date(date);
-                const year = dateObj.getFullYear();
-                const month = dateObj.getMonth() + 1;
+                const year = date.substring(0, 4);
+                const month = parseInt(date.substring(5, 7), 10);
                 const quarter = Math.ceil(month / 3);
-                return `${year} T${quarter}`;
+                
+                const formattedLabel = `${year} T${quarter}`;
+                console.log(`🕰️ Data original: ${date}, Label formatado: ${formattedLabel}`);
+                return formattedLabel;
             });
         
         default:
@@ -44,58 +23,92 @@ function formatChartLabels(dates, formatType = 'default') {
 }
 
 
+
 // Função compartilhada para buscar dados do PIB e montar o gráfico full
-function fetchPIBData(chartId = 'pibChartFull', endpoint = '/api/pib_db') {
-    //#console.log(`Iniciando busca de dados do PIB no endpoint: ${endpoint}`);
+function fetchPIBData() {
+    console.log('🚀 Iniciando fetchPIBData()');
     
-    fetch(endpoint)
+    const ctx = document.getElementById('pibChartFull');
+    
+    if (!ctx) {
+        console.error('❌ Elemento do gráfico PIB não encontrado');
+        console.log('🔍 Elementos disponíveis:', document.getElementsByTagName('canvas'));
+        return;
+    }
+
+    console.log('✅ Elemento do canvas encontrado:', ctx);
+
+    fetch('/api/pib_db')
         .then(response => {
-            console.log('Resposta do PIB:', response);
+            console.log('✅ Resposta recebida da API de PIB');
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`Erro na requisição: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Dados do PIB recebidos:', data);
+            console.log('📊 Dados do PIB recebidos:', data);
             
-            // Verificar se há dados
-            if (!data.dates || data.dates.length === 0) {
-                console.error('Nenhum dado de PIB encontrado');
-                document.getElementById(chartId).innerHTML = 'Sem dados do PIB disponíveis';
+            // Log detalhado dos dados
+            console.log('🕰️ Datas originais:', data.dates);
+            console.log('📈 Valores:', data.values);
+            
+            // Verificar se há dados suficientes
+            if (!data.dates || !data.values || data.dates.length === 0) {
+                console.error('❌ Dados insuficientes para renderizar o gráfico');
                 return;
             }
 
-            const ctx = document.getElementById(chartId).getContext('2d');
-            
-            // Usar formatação de trimestre para PIB Brasil
-            
-
-            // Verificar se o contexto foi criado
-            if (!ctx) {
-                console.error('Não foi possível criar o contexto do gráfico do PIB');
-                return;
-            }
-
-        
             const formattedLabels = formatChartLabels(data.dates, 'trimester');
+            console.log('🏷️ Labels formatados:', formattedLabels);
+
+            
+            // Destruir gráfico existente, se houver
+            if (window.pibChart instanceof Chart) {
+                console.log('🗑️ Destruindo gráfico PIB existente');
+                window.pibChart.destroy();
+            }
+
+            const ctxChart = ctx.getContext('2d');
+            console.log('🖼️ Contexto do canvas obtido:', ctxChart);
+
+
+            const datasets = [{
+                label: 'BCPB',
+                data: data.values,
+                borderWidth: 2,
+                tension: 0.1,
+                // Usar uma função para definir a cor baseada no valor
+                borderColor: data.values.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
+                backgroundColor: data.values.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
+                segment: {
+                    borderColor: ctx => {
+                        const value = ctx.p0DataIndex !== undefined ? data.values[ctx.p0DataIndex] : 0;
+                        return value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)';
+                    }
+                }
+            }];
 
 
 
-            console.log('Labels formatadas:', formattedLabels);
-            console.log('Valores:', data.values);
-
-            window.pibChart = new Chart(ctx, {
-                type: 'line',
+            window.pibChart = new Chart(ctxChart, {
+                type: 'bar',
                 data: {
                     labels: formattedLabels,
                     datasets: [{
-                        label: 'PIB',
-                        data: data.values,
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        label: 'PIB (%)',
                         borderWidth: 2,
-                        tension: 0.1
+                        tension: 0.1,
+                        data: data.values,
+                        borderColor: data.values.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
+                        backgroundColor: data.values.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
+                        segment: {
+                            borderColor: ctx => {
+                                const value = ctx.p0DataIndex !== undefined ? data.values[ctx.p0DataIndex] : 0;
+                                return value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)';
+                                }
+                        }
+                        
                     }]
                 },
                 options: {
@@ -111,20 +124,27 @@ function fetchPIBData(chartId = 'pibChartFull', endpoint = '/api/pib_db') {
                         }
                     },
                     scales: {
+                        x: {
+                            title: {
+                                display: false,
+                                text: 'Trimestres'
+                            }
+                        },
                         y: {
-                            beginAtZero: false,
                             title: {
                                 display: true,
-                                text: data.unit || 'Valor'
+                                text: '(%)'
                             }
                         }
                     }
                 }
             });
+
+            console.log('✅ Gráfico PIB renderizado com sucesso');
         })
         .catch(error => {
-            console.error('Erro completo ao buscar dados do PIB:', error);
-            const chartElement = document.getElementById(chartId);
+            console.error('❌ Erro completo ao buscar dados do PIB:', error);
+            const chartElement = document.getElementById('pibChartFull');
             if (chartElement) {
                 chartElement.innerHTML = `Erro ao carregar dados do PIB: ${error.message}`;
             } else {
@@ -132,8 +152,7 @@ function fetchPIBData(chartId = 'pibChartFull', endpoint = '/api/pib_db') {
             }
         });
 }
-
-
+            
 // Função compartilhada para buscar dados do PIB da Paraíba e montar o gráfico full
 
 function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
@@ -178,8 +197,16 @@ function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
 
             window.pibChart = new Chart(ctx, {
                 type: 'bar',
+                
                 data: {
-                    labels: formattedLabels,
+                    labels: data.dates.map(date => {
+                        // Extrai diretamente os primeiros 4 caracteres (ano)
+                        const year = date.substring(0, 4);
+                        console.log(`🕰️ Data original: ${date}, Ano extraído: ${year}`);
+                        return year;
+                    }),
+                    
+
                     datasets: [{
                         label: 'PIB',
                         data: data.values,
@@ -225,89 +252,92 @@ function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
 }
 
 
+
+
  // Função compartilhada para buscar dados de Desocupação para montar o gráfico full
- function fetchDesocupacaoData(chartId = 'desocupacaoChartFull', endpoint = '/api/desocupacao') {
-    console.log(`Iniciando busca de dados de Desocupação no endpoint: ${endpoint}`);
+  function fetchDesocupacaoData(chartId = 'desocupacaoChartFull', endpoint = '/api/desocupacao') {
+    console.log(`🔍 Iniciando busca de dados no endpoint: ${endpoint}`);
     
+    const chartElement = document.getElementById(chartId);
+    if (!chartElement) {
+        console.error(`❌ Elemento do gráfico com ID '${chartId}' não encontrado`);
+        return;
+    }
+
     fetch(endpoint)
         .then(response => {
-            console.log('Resposta para Desocupacao:', response);
+            console.log('📡 Resposta recebida:', response);
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`Erro HTTP! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Dados de Desocupacao recebidos:', data);
-            
-            // Verificar se há dados
-            if (!data.dates || data.dates.length === 0) {
-                console.error('Nenhum dado de Desocupacao encontrado');
-                document.getElementById(chartId).innerHTML = 'Sem dados de Desocupacao disponíveis';
+            console.log('🔍 Dados recebidos:', data);
+            console.log('📅 Datas originais:', data.dates);
+            console.log('📊 Valores originais:', data.values);
+
+            if (!data.dates || !data.values || data.dates.length === 0) {
+                console.error('❌ Sem dados disponíveis');
+                chartElement.innerHTML = 'Sem dados disponíveis';
                 return;
             }
 
-            const ctx = document.getElementById(chartId).getContext('2d');
+            const ctx = chartElement.getContext('2d');
             
-            // Verificar se o contexto foi criado
-            if (!ctx) {
-                console.error('Não foi possível criar o contexto do gráfico de Desocupacao' );
-                return;
+            // Destruir gráfico existente
+            if (window.desocupacaoChart instanceof Chart) {
+                window.desocupacaoChart.destroy();
             }
-
-            
-            const formattedLabels = formatChartLabels(data.dates, 'trimester');
-
-            console.log('Labels formatadas:', formattedLabels);
-            console.log('Valores:', data.values);
 
             window.desocupacaoChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: formattedLabels,
+                    labels: data.dates,
                     datasets: [{
-                        label: 'Desocupação',
+                        label: 'Taxa de Desocupação',
                         data: data.values,
-                        borderColor: 'rgb(70, 130, 180)',
-                        backgroundColor: 'rgb(70, 130, 180, 0.2)',
-                        borderWidth: 2,
+                        borderColor: 'rgb(75, 192, 192)',
                         tension: 0.1
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             display: false
                         },
                         title: {
                             display: true,
-                            text: 'Brasil: Taxa de Desocupação Trimestral'
-                        }
+                            text: 'Brasil: Taxa de Desocupação'  
+                        },
                     },
                     scales: {
+                        x: {
+                            title: {
+                             display: true
+                                
+                            }
+                        },
                         y: {
-                            beginAtZero: false,
                             title: {
                                 display: true,
-                                text: data.unit || 'Valor'
+                                text: '(%)'
                             }
                         }
                     }
                 }
             });
+
+            console.log('✅ Gráfico renderizado com sucesso');
         })
         .catch(error => {
-            console.error('Erro completo ao buscar dados de Desocupacao');
-            const chartElement = document.getElementById(chartId);
-            if (chartElement) {
-                chartElement.innerHTML = `Erro ao carregar dados de Desocupacao: ${error.message}`;
-            } else {
-                console.error('Elemento do gráfico não encontrado');
-            }
+            console.error('❌ Erro completo ao buscar dados:', error);
+            chartElement.innerHTML = `Erro ao carregar dados: ${error.message}`;
         });
 }
+
+
 
 
 // Função compartilhada para buscar dados de Desocupação da Paraiba para montar o gráfico full
@@ -349,7 +379,8 @@ function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '
             window.desocupacaoChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: formattedLabels,
+                    labels: data.dates,
+                    //labels: formattedLabels,
                     datasets: [{
                         label: 'Desocupação',
                         data: data.values,
@@ -368,15 +399,21 @@ function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '
                         },
                         title: {
                             display: true,
-                            text: 'Brasil: Taxa de Desocupação Trimestral'
+                            text: 'Paraíba: Taxa de Desocupação Trimestral'
                         }
                     },
                     scales: {
+                        x: {
+                            title: {
+                                display: false,
+                                text: 'Data'
+                            }
+                        },
                         y: {
                             beginAtZero: false,
                             title: {
                                 display: true,
-                                text: data.unit || 'Valor'
+                                text: '(%)'
                             }
                         }
                     }
@@ -393,17 +430,6 @@ function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '
             }
         });
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -1,4 +1,10 @@
 from app import app
+from app.agendamento_atualizacao import start_etl_scheduler
+import threading
+
+# Iniciar o agendador em um thread separado
+scheduler_thread = threading.Thread(target=start_etl_scheduler, daemon=True)
+scheduler_thread.start()
 
 from app.data_apis.conect_post.conect_post import (
     verificar_conexao_e_dados, 

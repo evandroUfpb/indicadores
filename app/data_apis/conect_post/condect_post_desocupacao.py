@@ -58,28 +58,25 @@ def get_desocupacao_data_from_db():
         # Log detalhado
         logging.info(f"Número de registros encontrados: {len(desocupacao_records)}")
         
-        # Imprimir detalhes de cada registro
-        for record in desocupacao_records[:5]:  # Mostrar os primeiros 5 registros
-            logging.info(f"Registro: Data={record.data}, Desocupação={record.desocupacao}")
-        
         # Verificar se há registros
         if not desocupacao_records:
             logging.warning("Nenhum registro encontrado na tabela Desocupação")
             return None
         
-        # Converter para dicionário
-        data = {
+        # Converter para dicionário mantendo o formato original
+        formatted_data = {
             'dates': [record.data.strftime('%Y-%m-%d') for record in desocupacao_records],
             'values': [float(record.desocupacao) for record in desocupacao_records],
             'label': 'Taxa de Desocupação',
-            'unit': '%'
+            'unit': '%',
+            'format': 'date'  # Adicionar um campo para indicar o formato
         }
         
         # Log dos dados
-        logging.info(f"Datas: {data['dates']}")
-        logging.info(f"Valores: {data['values']}")
+        logging.info(f"Datas originais: {formatted_data['dates']}")
+        logging.info(f"Valores: {formatted_data['values']}")
         
-        return data
+        return formatted_data
     except Exception as e:
         logging.error(f"Erro ao buscar dados da Desocupação: {e}")
         import traceback

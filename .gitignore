@@ -1,3 +1,65 @@
+# # Python
+# __pycache__/
+# *.py[cod]
+# *$py.class
+# *.so
+# .Python
+# env/
+# venv/
+# .venv/
+# build/
+# develop-eggs/
+# dist/
+# downloads/
+# eggs/
+# .eggs/
+# lib/
+# lib64/
+# parts/
+# sdist/
+# var/
+# *.egg-info/
+# .installed.cfg
+# *.egg
+
+# # Database
+# *.db
+# *.sqlite3
+
+# # Logs
+# *.log
+
+# # IDEs and editors
+# .idea/
+# .vscode/
+# *.swp
+# *.swo
+# *~
+
+# # OS generated files
+# .DS_Store
+# .DS_Store?
+# ._*
+# .Spotlight-V100
+# .Trashes
+# ehthumbs.db
+# Thumbs.db
+
+# # Environment files
+# #.env
+# #.env.local
+# #.env.development.local
+# #.env.test.local
+# #.env.production.local
+
+# # Frontend
+# node_modules/
+# npm-debug.log*
+# yarn-debug.log*
+# yarn-error.log*
+# EOL
+
+# Já existentes (mantidos)
 # Python
 __pycache__/
 *.py[cod]
@@ -46,15 +108,65 @@ ehthumbs.db
 Thumbs.db
 
 # Environment files
-#.env
-#.env.local
-#.env.development.local
-#.env.test.local
-#.env.production.local
+.env
+.env.local
+.env.development.local
 
-# Frontend
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-EOL
+# Novos itens para adicionar
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# Pytest
+.pytest_cache/
+
+# Mypy
+.mypy_cache/
+
+# Flask
+instance/
+.webassets-cache
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Backup files
+*.bak
+*.gho
+*.ori
+*.orig
+*.tmp
+
+# Arquivos de configuração de ambiente específicos
+.env.production
+.env.staging
+
+# Arquivos de log de profiling
+*.prof
+
+# Arquivos de cache do Python
+*.pyc
+__pycache__/
+
+# Arquivos de configuração de deploy
+*.log.*
+
+# Arquivos temporários do sistema
+.tmp/
+tmp/
+
+# Arquivos de configuração de editores específicos
+.spyderproject
+.spyproject
+.ropeproject
+
+# Arquivos de configuração do MacOS
+.AppleDouble
+.LSOverride
+
+# Arquivos de configuração do Windows
+$RECYCLE.BIN/
