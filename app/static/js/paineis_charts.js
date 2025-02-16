@@ -1,4 +1,3 @@
-
 function formatChartLabels(dates, formatType = 'trimester') {
     console.log('Formatando labels:', dates, formatType);
 
@@ -15,6 +14,22 @@ function formatChartLabels(dates, formatType = 'trimester') {
                 const formattedLabel = `${year} T${quarter}`;
                 console.log(`🕰️ Data original: ${date}, Label formatado: ${formattedLabel}`);
                 return formattedLabel;
+            });
+        
+        case 'monthly':
+            return dates.map(date => {
+                const year = date.substring(0, 4);
+                const month = parseInt(date.substring(5, 7), 10);
+                
+                // Array de nomes de meses abreviados
+                const monthNames = [
+                    'Jan', 'Fev', 'Mar', 'Abr', 
+                    'Mai', 'Jun', 'Jul', 'Ago', 
+                    'Set', 'Out', 'Nov', 'Dez'
+                ];
+                
+                // Formatar como "Ano - Mês" a cada 6 meses
+                return `${year} - ${monthNames[month - 1]}`;
             });
         
         default:
@@ -176,12 +191,6 @@ function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
                 return;
             }
 
-            // Log detalhado dos dados recebidos
-            console.log('Datas recebidas:', data.dates);
-            console.log('Primeiro elemento das datas:', data.dates[0]);
-            console.log('Último elemento das datas:', data.dates[data.dates.length - 1]);
-
-
             const ctx = document.getElementById(chartId).getContext('2d');
             
             // Verificar se o contexto foi criado
@@ -189,6 +198,12 @@ function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
                 console.error('Não foi possível criar o contexto do gráfico do PIB da Paraiba');
                 return;
             }
+
+            // Log detalhado dos dados recebidos
+            console.log('Datas recebidas:', data.dates);
+            console.log('Primeiro elemento das datas:', data.dates[0]);
+            console.log('Último elemento das datas:', data.dates[data.dates.length - 1]);
+
 
             const formattedLabels = formatChartLabels(data.dates, 'yearOnly');
 
@@ -339,22 +354,17 @@ function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
 
 
 
-
-// Função compartilhada para buscar dados de Desocupação da Paraiba para montar o gráfico full
 function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '/api/desocupacao_pb') {
-    console.log(`Iniciando busca de dados de Desocupação no endpoint: ${endpoint}`);
+    console.log(`Iniciando busca de dados de Desocupação da Paraíba no endpoint: ${endpoint}`);
     
     fetch(endpoint)
         .then(response => {
-            console.log('Resposta para Desocupacao da Paraíba:', response);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Dados de Desocupação da Paraíba recebidos:', data);
-            
             // Verificar se há dados
             if (!data.dates || data.dates.length === 0) {
                 console.error('Nenhum dado de Desocupação da Paraíba encontrado');
@@ -366,27 +376,26 @@ function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '
             
             // Verificar se o contexto foi criado
             if (!ctx) {
-                console.error('Não foi possível criar o contexto do gráfico de Desocupacao' );
+                console.error('Não foi possível criar o contexto do gráfico de Desocupação da Paraíba');
                 return;
             }
 
-            
+            // Formatar labels com trimestre
             const formattedLabels = formatChartLabels(data.dates, 'trimester');
 
-            console.log('Labels formatadas:', formattedLabels);
-            console.log('Valores:', data.values);
+            // Destruir gráfico existente, se houver
+            if (window.desocupacaoPbChart instanceof Chart) {
+                window.desocupacaoPbChart.destroy();
+            }
 
-            window.desocupacaoChart = new Chart(ctx, {
+            window.desocupacaoPbChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.dates,
-                    //labels: formattedLabels,
+                    labels: formattedLabels,
                     datasets: [{
-                        label: 'Desocupação',
+                        label: 'Taxa de Desocupação da Paraíba (%)',
                         data: data.values,
-                        borderColor: 'rgb(70, 130, 180)',
-                        backgroundColor: 'rgb(70, 130, 180, 0.2)',
-                        borderWidth: 2,
+                        borderColor: 'rgb(75, 192, 192)',
                         tension: 0.1
                     }]
                 },
@@ -394,42 +403,142 @@ function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        },
                         title: {
                             display: true,
-                            text: 'Paraíba: Taxa de Desocupação Trimestral'
+                            text: 'Paraíba: Taxa de Desocupação'
+                        },
+                        legend: {
+                            display: false
                         }
                     },
                     scales: {
                         x: {
                             title: {
-                                display: false,
-                                text: 'Data'
+                                display: true,
+                                text: ' '
+                            },
+                            // Configurações para ajuste dinâmico
+                            ticks: {
+                                autoSkip: true,
+                                maxTicksLimit: 20  // Limite máximo de ticks
                             }
                         },
                         y: {
-                            beginAtZero: false,
                             title: {
                                 display: true,
                                 text: '(%)'
-                            }
+                            },
+                            beginAtZero: true
                         }
                     }
                 }
             });
+
+            console.log('Gráfico de Desocupação da Paraíba renderizado com sucesso');
         })
         .catch(error => {
-            console.error('Erro completo ao buscar dados de Desocupacao');
+            console.error('Erro ao buscar dados de Desocupação da Paraíba:', error);
             const chartElement = document.getElementById(chartId);
             if (chartElement) {
-                chartElement.innerHTML = `Erro ao carregar dados de Desocupacao: ${error.message}`;
-            } else {
-                console.error('Elemento do gráfico não encontrado');
+                chartElement.innerHTML = `Erro ao carregar dados de Desocupação da Paraíba: ${error.message}`;
             }
         });
 }
+
+
+
+
+
+// // Função compartilhada para buscar dados de Desocupação da Paraiba para montar o gráfico full
+// function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '/api/desocupacao_pb') {
+//     console.log(`Iniciando busca de dados de Desocupação no endpoint: ${endpoint}`);
+    
+//     fetch(endpoint)
+//         .then(response => {
+//             console.log('Resposta para Desocupacao da Paraíba:', response);
+//             if (!response.ok) {
+//                 throw new Error(`HTTP error! status: ${response.status}`);
+//             }
+//             return response.json();
+//         })
+//         .then(data => {
+//             console.log('Dados de Desocupação da Paraíba recebidos:', data);
+            
+//             // Verificar se há dados
+//             if (!data.dates || data.dates.length === 0) {
+//                 console.error('Nenhum dado de Desocupação da Paraíba encontrado');
+//                 document.getElementById(chartId).innerHTML = 'Sem dados de Desocupação da Paraíba disponíveis';
+//                 return;
+//             }
+
+//             const ctx = document.getElementById(chartId).getContext('2d');
+            
+//             // Verificar se o contexto foi criado
+//             if (!ctx) {
+//                 console.error('Não foi possível criar o contexto do gráfico de Desocupacao' );
+//                 return;
+//             }
+
+            
+//             const formattedLabels = formatChartLabels(data.dates, 'trimester');
+
+//             console.log('Labels formatadas:', formattedLabels);
+//             console.log('Valores:', data.values);
+
+//             window.desocupacaoChart = new Chart(ctx, {
+//                 type: 'line',
+//                 data: {
+//                     labels: data.dates,
+//                     //labels: formattedLabels,
+//                     datasets: [{
+//                         label: 'Desocupação',
+//                         data: data.values,
+//                         borderColor: 'rgb(70, 130, 180)',
+//                         backgroundColor: 'rgb(70, 130, 180, 0.2)',
+//                         borderWidth: 2,
+//                         tension: 0.1
+//                     }]
+//                 },
+//                 options: {
+//                     responsive: true,
+//                     maintainAspectRatio: false,
+//                     plugins: {
+//                         legend: {
+//                             display: false
+//                         },
+//                         title: {
+//                             display: true,
+//                             text: 'Paraíba: Taxa de Desocupação Trimestral'
+//                         }
+//                     },
+//                     scales: {
+//                         x: {
+//                             title: {
+//                                 display: false,
+//                                 text: 'Data'
+//                             }
+//                         },
+//                         y: {
+//                             beginAtZero: false,
+//                             title: {
+//                                 display: true,
+//                                 text: '(%)'
+//                             }
+//                         }
+//                     }
+//                 }
+//             });
+//         })
+//         .catch(error => {
+//             console.error('Erro completo ao buscar dados de Desocupacao');
+//             const chartElement = document.getElementById(chartId);
+//             if (chartElement) {
+//                 chartElement.innerHTML = `Erro ao carregar dados de Desocupacao: ${error.message}`;
+//             } else {
+//                 console.error('Elemento do gráfico não encontrado');
+//             }
+//         });
+// }
 
 
 
@@ -720,112 +829,125 @@ function fetchBcpbData(chartId = 'BcpbChartFull', endpoint = '/api/bcpb') {
     
     fetch(endpoint)
         .then(response => {
-            console.log('Resposta para bcpb:', response);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Dados de bcpb recebidos:', data);
-            
             // Verificar se há dados
             if (!data.dates || data.dates.length === 0) {
-                console.error('Nenhum dado de bcpb encontrado');
-                document.getElementById(chartId).innerHTML = 'Sem dados de bcpb disponíveis';
+                console.error('Nenhum dado do BCPB encontrado');
+                document.getElementById(chartId).innerHTML = 'Sem dados do BCPB disponíveis';
                 return;
             }
+
+            // Encontrar a data máxima
+            const maxDate = new Date(Math.max(...data.dates.map(date => new Date(date))));
+            
+            // Calcular data de 10 anos atrás
+            const tenYearsAgo = new Date(maxDate.getFullYear() - 20, maxDate.getDate());
+
+            // Filtrar dados para os últimos 10 anos
+            const filteredDates = [];
+            const filteredValues = [];
+
+            data.dates.forEach((date, index) => {
+                const currentDate = new Date(date);
+                if (currentDate >= tenYearsAgo) {
+                    filteredDates.push(date);
+                    filteredValues.push(data.values[index]);
+                }
+            });
 
             const ctx = document.getElementById(chartId).getContext('2d');
             
             // Verificar se o contexto foi criado
             if (!ctx) {
-                console.error('Não foi possível criar o contexto do gráfico do bcpb' );
+                console.error('Não foi possível criar o contexto do gráfico do BCPB');
                 return;
             }
 
-            // // Converter datas para formato mais legível
-            // const formattedLabels = data.dates.map(date => {
-            //     // Assumindo que as datas estão no formato YYYY-MM-DD ou YYYY
-            //     const dateObj = new Date(date);
-            //     return dateObj.getFullYear().toString();
-            // });
+            // Formatar labels mensais
+            const formattedLabels = formatChartLabels(filteredDates, 'monthly');
 
-            const formattedLabels = formatChartLabels(data.dates, 'monthly');
+            // Destruir gráfico existente, se houver
+            if (window.bcpbChart instanceof Chart) {
+                window.bcpbChart.destroy();
+            }
 
-            console.log('Labels formatadas:', formattedLabels);
-            console.log('Valores:', data.values);
-
-
-             // Criar datasets com cores condicionais
-             const datasets = [{
+            // Criar datasets com cores condicionais
+            const datasets = [{
                 label: 'BCPB',
-                data: data.values,
+                data: filteredValues,
                 borderWidth: 2,
                 tension: 0.1,
                 // Usar uma função para definir a cor baseada no valor
-                borderColor: data.values.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
-                backgroundColor: data.values.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
+                borderColor: filteredValues.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
+                backgroundColor: filteredValues.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
                 segment: {
                     borderColor: ctx => {
-                        const value = ctx.p0DataIndex !== undefined ? data.values[ctx.p0DataIndex] : 0;
+                        const value = ctx.p0DataIndex !== undefined ? filteredValues[ctx.p0DataIndex] : 0;
                         return value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)';
                     }
                 }
             }];
 
-            window.ipcaChart = new Chart(ctx, {
+            window.bcpbChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: formattedLabels,
                     datasets: datasets
-                    // data: {
-                    //     labels: formattedLabels,
-                    //     datasets: datasets
-                    },
-                    // datasets: [{
-                    //     label: 'BCPB',
-                    //     data: data.values,
-                    //     borderColor: 'rgb(135,206,250)',
-                    //     backgroundColor: 'rgba(135,206,250, 0.2)',
-                    //     borderWidth: 2,
-                    //     tension: 0.1
-                    //}]
-                
+                },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        },
                         title: {
                             display: true,
-                            text: 'Paraíba: Saldo da Balança Comercial'
+                            text: `Saldo da Balança Comercial da Paraíba (Últimos 10 anos)`
+                        },
+                        legend: {
+                            display: false
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: false,
+                        x: {
                             title: {
                                 display: true,
-                                text: data.unit || 'Valor'
+                                text: 'Período'
+                            },
+                            ticks: {
+                                autoSkip: true,
+                                maxTicksLimit: 20,  // Limite máximo de ticks
+                                callback: function(value, index, values) {
+                                    // Mostrar apenas alguns labels para evitar poluição visual
+                                    return index % 6 === 0 ? formattedLabels[value] : '';
+                                }
                             }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Valor (R$)'
+                            },
+                            beginAtZero: true
                         }
                     }
                 }
             });
+
+            console.log('Gráfico do BCPB renderizado com sucesso');
         })
         .catch(error => {
-            console.error('Erro completo ao buscar dados de BCPB');
+            console.error('Erro ao buscar dados do BCPB:', error);
             const chartElement = document.getElementById(chartId);
             if (chartElement) {
-                chartElement.innerHTML = `Erro ao carregar dados de BCPB: ${error.message}`;
-            } else {
-                console.error('Elemento do gráfico não encontrado');
+                chartElement.innerHTML = `Erro ao carregar dados do BCPB: ${error.message}`;
             }
         });
 }
+
 
 
 
@@ -873,8 +995,8 @@ function fetchDivpubData(chartId = 'dividaPbChartFull', endpoint = '/api/divpub'
                 borderWidth: 2,
                 tension: 0.1,
                 // Usar uma função para definir a cor baseada no valor
-                borderColor: data.values.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
-                backgroundColor: data.values.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
+                borderColor: data.values.map(value => value <= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
+                backgroundColor: data.values.map(value => value <= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
                 segment: {
                     borderColor: ctx => {
                         const value = ctx.p0DataIndex !== undefined ? data.values[ctx.p0DataIndex] : 0;

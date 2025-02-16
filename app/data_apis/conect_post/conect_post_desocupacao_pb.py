@@ -3,6 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from app.data_apis.sidra import get_desocupacao_pb_data
 from app.data_apis.conect_post.database import Session, engine
 import logging
+from datetime import datetime, timedelta  # Adicionando importações
+
 
 # Criar modelo para Desocupação
 Base = declarative_base()
@@ -115,21 +117,26 @@ if __name__ == "__main__":
 def verificar_dados_desocupacao_pb():
     session = Session()
     try:
-        # Contar registros
-        count = session.query(DesocupacaoPbModel).count()
-        print(f"Número total de registros na tabela Desocupação da Paraíba: {count}")
+        # Buscar o último registro
+        ultimo_registro = session.query(DesocupacaoPbModel).order_by(DesocupacaoPbModel.data.desc()).first()
+
+        # Definir data de início dinamicamente
+        if ultimo_registro:
+            # Pega a última data e subtrai 10 anos
+            data_inicio = ultimo_registro.data - timedelta(days=365 * 10)
+        else:
+            # Se não há registros, define uma data padrão
+            data_inicio = datetime(2011, 10, 1).date()
+
+        # Buscar dados a partir da data de início
+        desocupacao_pb_data = get_desocupacao_pb_data(start_date=data_inicio)
         
-        # Buscar alguns registros
-        registros = session.query(DesocupacaoPbModel).order_by(DesocupacaoPbModel.data).limit(5).all()
+        # Inserir dados
+        upsert_desocupacao_pb_data(desocupacao_pb_data)
         
-        print("\nPrimeiros registros:")
-        for registro in registros:
-            print(f"Data: {registro.data}, Desocupação: {registro.desocupacao_pb}")
-        
-        return count > 0
+        # Resto do código de verificação...
     except Exception as e:
-        print(f"Erro ao verificar dados de Desocupação da Paraíba: {e}")
-        return False
+        logging.error(f"Erro ao verificar dados de Desocupação da Paraíba: {e}")
     finally:
         session.close()
 

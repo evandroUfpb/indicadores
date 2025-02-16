@@ -73,8 +73,8 @@ def get_desocupacao_data_from_db():
         }
         
         # Log dos dados
-        logging.info(f"Datas originais: {formatted_data['dates']}")
-        logging.info(f"Valores: {formatted_data['values']}")
+        ## logging.info(f"Datas originais: {formatted_data['dates']}")
+        ##logging.info(f"Valores: {formatted_data['values']}")
         
         return formatted_data
     except Exception as e:
@@ -119,13 +119,15 @@ def verificar_dados_desocupacao():
         # Buscar alguns registros
         registros = session.query(DesocupacaoModel).order_by(DesocupacaoModel.data).limit(5).all()
         
-        print("\nPrimeiros registros:")
-        for registro in registros:
-            print(f"Data: {registro.data}, Desocupação: {registro.desocupacao}")
+        ## print("\nPrimeiros registros:")
+        ## for registro in registros:
+        ##    print(f"Data: {registro.data}, Desocupação: {registro.desocupacao}")
         
         return count > 0
     except Exception as e:
         print(f"Erro ao verificar dados de Desocupação: {e}")
+        import traceback
+        print(traceback.format_exc())
         return False
     finally:
         session.close()

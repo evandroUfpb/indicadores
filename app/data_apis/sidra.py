@@ -178,7 +178,7 @@ def get_desocupacao_data():
 
  # --------------- Função para coletar dados da Desocupação da Paraíba ----------
 
-def get_desocupacao_pb_data():
+def get_desocupacao_pb_data(start_date = None):
     url = pd.read_json("https://apisidra.ibge.gov.br/values/t/4099/n3/25/v/4099/p/all?formato=json")
     
     # Renomear as colunas usando a primeira linha
@@ -186,6 +186,14 @@ def get_desocupacao_pb_data():
     
     # Remover a primeira linha (que agora são os nomes das colunas)
     url = url.iloc[1:]
+
+    # Se nenhuma data de início for fornecida, use a data padrão
+    if start_date is None:
+        start_date = "2011-10-01"
+
+    # Converter start_date para datetime se for uma string
+    if isinstance(start_date, str):
+        start_date = pd.to_datetime(start_date)    
     
     # Tratar os dados
     des_pb = (
@@ -204,6 +212,6 @@ def get_desocupacao_pb_data():
         .filter(items=['data', 'des'])
         .set_index("data")
         .asfreq("QS")
-        .query('data > "2011-10-01"')
+        .query(f'data > "{start_date}"')
     )
     return des_pb

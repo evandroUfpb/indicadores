@@ -1,9 +1,12 @@
-from sqlalchemy import Column, Date, Float
-from sqlalchemy.ext.declarative import declarative_base
-from app.data_apis.bcb import get_cambio_data
-from app.data_apis.conect_post.database import Session, engine
+from datetime import datetime, date
 import logging
 import pandas as pd
+from sqlalchemy import Column, Date, Float
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from app.data_apis.bcb import get_cambio_data
+from app.data_apis.conect_post.database import Session, engine
+
 
 
 # Cria modelo para CAMBIO
@@ -81,8 +84,8 @@ def get_cambio_data_from_db():
         }
         
         # Log dos dados
-        logging.info(f"Datas: {data['dates']}")
-        logging.info(f"Valores: {data['values']}")
+        ## logging.info(f"Datas: {data['dates']}")
+        ## logging.info(f"Valores: {data['values']}")
         
         return data
     except Exception as e:
@@ -93,80 +96,64 @@ def get_cambio_data_from_db():
     finally:
         session.close()
 
-def popular_cambio_se_vazia():
-    session = Session()
+
+
+# Verifica e atualiza dados do Cambio
+def verificar_dados_cambio():
     try:
-        # Verificar se a tabela está vazia
-        count = session.query(CambioModel).count()
-        if count == 0:
-            logging.info("Tabela CAMBIO vazia. Buscando dados...")
+        # Conexão com o banco de dados
+        session = Session()
+        
+        logging.info("🔍 Verificando tabela CAMBIO")
+
+        # Buscar o último registro
+        ultimo_registro = session.query(CambioModel).order_by(CambioModel.data.desc()).first()
+
+        # Data atual
+        data_atual = date.today()
+        
+        # Se não há registros, ou o último registro é de mais de um dia atrás
+        if not ultimo_registro or (data_atual - ultimo_registro.data).days >= 1:
+            logging.info("🔄 Iniciando atualização dos dados de Câmbio")
             
-            # Buscar dados da CAMBIO
-            cambio_data = get_cambio_data()
+            # Buscar novos dados
+            dados_cambio = get_cambio_data()
             
-            if cambio_data is not None:
-                logging.info(f"Dados do CAMBIO obtidos: {len(cambio_data['dates'])} registros")
-                
-                # Converter datas e valores para DataFrame
-                df = pd.DataFrame({
-                    'data': pd.to_datetime(cambio_data['dates'], format='%Y-%m-%d'),
-                    'valor': cambio_data['values']
+            if dados_cambio:
+                # Processar e inserir dados
+                df_cambio = pd.DataFrame({
+                    'data': dados_cambio['dates'],
+                    'cambio': dados_cambio['values']
                 })
                 
-                # Inserir dados no banco usando bulk_save_objects
-                try:
-                    # Criar lista de objetos CambioModel
-                    cambio_records = [
-                        CambioModel(data=row['data'], cambio=row['valor']) 
-                        for _, row in df.iterrows()
-                    ]
-                    
-                    # Inserção em lote
-                    session.bulk_save_objects(cambio_records)
-                    session.commit()
-                    
-                    logging.info(f"Dados do CAMBIO populados com sucesso: {len(cambio_records)} registros")
+                # Converter datas para datetime.date
+                df_cambio['data'] = pd.to_datetime(df_cambio['data']).dt.date
                 
-                except Exception as e:
-                    session.rollback()
-                    logging.error(f"Erro ao inserir dados do CAMBIO: {e}")
+                # Inserir dados no banco
+                for index, row in df_cambio.iterrows():
+                    registro_existente = session.query(CambioModel).filter_by(data=row['data']).first()
+                    
+                    if not registro_existente:
+                        novo_registro = CambioModel(data=row['data'], cambio=row['cambio'])
+                        session.add(novo_registro)
+                
+                session.commit()
+                logging.info(f"✅ Dados de Câmbio atualizados: {len(df_cambio)} registros")
             else:
-                logging.warning("Não foi possível obter dados da CAMBIO")
+                logging.warning("❌ Nenhum dado de Câmbio encontrado para atualização")
+        
         else:
-            logging.info(f"Tabela CAMBIO já possui {count} registros")
+            logging.info("✔️ Dados de Câmbio já estão atualizados")
+        
+        session.close()
     
     except Exception as e:
-        logging.error(f"Erro ao popular dados da CAMBIO: {e}")
-    
-    finally:
-        session.close()
-
+        logging.error(f"❌ Erro ao verificar dados do Câmbio: {e}")
+        if 'session' in locals():
+            session.rollback()
+            session.close()
+        raise
 
 # Chame esta função no seu script de inicialização
 if __name__ == "__main__":
-    popular_cambio_se_vazia()
-
-def verificar_dados_cambio():
-    session = Session()
-    try:
-        # Contar registros
-        count = session.query(CambioModel).count()
-        print(f"Número total de registros na tabela Cambio: {count}")
-        
-        # Buscar alguns registros
-        registros = session.query(CambioModel).order_by(CambioModel.data).limit(5).all()
-        
-        print("\nPrimeiros registros:")
-        for registro in registros:
-            print(f"Data: {registro.data}, Cambio: {registro.cambio}")
-        
-        return count > 0
-    except Exception as e:
-        print(f"Erro ao verificar dados da Cambio: {e}")
-        return False
-    finally:
-        session.close()
-
-# Chame esta função no seu script de inicialização
-if __name__ == "__main__":
-    verificar_dados_cambio()                
+    verificar_dados_cambio()

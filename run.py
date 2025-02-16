@@ -10,6 +10,7 @@ from app.data_apis.conect_post.conect_post import (
     verificar_conexao_e_dados, 
     popular_tabela_pib_se_vazia
 )
+
 from app.data_apis.conect_post.condect_post_desocupacao import (
     popular_desocupacao_se_vazia, 
     get_desocupacao_data_from_db,
@@ -26,32 +27,32 @@ from app.data_apis.conect_post.conect_post_desocupacao_pb import (
 
 
 from  app.data_apis.conect_post.conect_post_ipca import (
-    popular_ipca_se_vazia,
+    #popular_ipca_se_vazia,
     get_ipca_data_from_db,
     verificar_dados_ipca
    )
 
-from app.data_apis.conect_post.conect_post_selic import popular_selic_se_vazia
+#from app.data_apis.conect_post.conect_post_selic import #popular_selic_se_vazia
 
-from app.data_apis.conect_post.conect_post_cambio import popular_cambio_se_vazia
+from app.data_apis.conect_post.conect_post_cambio import verificar_dados_cambio
 
 from app.data_apis.conect_post.conect_post_sbcpb import popular_bcpb_se_vazia
 
-from app.data_apis.conect_post.conect_post_divliq_pb import popular_divliq_se_vazia, verificar_dados_divliq 
+from app.data_apis.conect_post.conect_post_divliq_pb import verificar_dados_divliq, popular_divliq_se_vazia 
 
 # Antes de iniciar o aplicativo
 verificar_conexao_e_dados()
 popular_tabela_pib_se_vazia()
 popular_desocupacao_se_vazia()
-popular_ipca_se_vazia()
-popular_selic_se_vazia()
-popular_cambio_se_vazia()
+#popular_ipca_se_vazia()
+#popular_selic_se_vazia()
+#popular_cambio_se_vazia()
 popular_bcpb_se_vazia()
 popular_desocupacao_pb_se_vazia()
 verificar_dados_desocupacao_pb()
 popular_divliq_se_vazia()
 verificar_dados_divliq()
-
+verificar_dados_cambio()
 
 # Verificação adicional da Dívida Pública
 print("\nVerificando dados da Dívida Pública:")

@@ -3,6 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from app.data_apis.bcb import get_ipca_data
 from app.data_apis.conect_post.database import Session, engine
 import logging
+from datetime import datetime, date
+import pandas as pd
 
 
 # Cria modelo para ipca
@@ -92,39 +94,53 @@ def get_ipca_data_from_db():
     finally:
         session.close()
 
-def popular_ipca_se_vazia():
-    session = Session()
-    try:
-        # Verificar se a tabela está vazia
-        count = session.query(IpcaModel).count()
-        if count == 0:
-            logging.info("Tabela IPCA vazia. Buscando dados...")
+# def popular_ipca_se_vazia():
+#     session = Session()
+#     try:
+#         # Verificar se a tabela está vazia
+#         count = session.query(IpcaModel).count()
+#         if count == 0:
+#             logging.info("Tabela IPCA vazia. Buscando dados...")
             
-            # Buscar dados do IPCA
-            ipca_data = get_ipca_data()
+#             # Buscar dados do IPCA
+#             ipca_data = get_ipca_data()
             
-            if ipca_data is not None:
-                # Inserir dados no banco
-                upsert_ipca_data(ipca_data)
-                logging.info("Dados do IPCA populados com sucesso")
-            else:
-                logging.error("Não foi possível buscar dados do IPCA")
-        else:
-            logging.info(f"Tabela IPCA já contém {count} registros")
-    except Exception as e:
-        logging.error(f"Erro ao popular dados do IPCA: {e}")
-    finally:
-        session.close()
+#             if ipca_data is not None:
+#                 # Inserir dados no banco
+#                 upsert_ipca_data(ipca_data)
+#                 logging.info("Dados do IPCA populados com sucesso")
+#             else:
+#                 logging.error("Não foi possível buscar dados do IPCA")
+#         else:
+#             logging.info(f"Tabela IPCA já contém {count} registros")
+#     except Exception as e:
+#         logging.error(f"Erro ao popular dados do IPCA: {e}")
+#     finally:
+#         session.close()
 
 
-# Chame esta função no seu script de inicialização
-if __name__ == "__main__":
-    popular_ipca_se_vazia()
+# # Chame esta função no seu script de inicialização
+# if __name__ == "__main__":
+#     popular_ipca_se_vazia()
+
+
+# Verifica dados do IPCA e atualiza se necessário    
 
 def verificar_dados_ipca():
+    """
+    Verifica e atualiza os dados de IPCA.
+    
+    Realiza as seguintes ações:
+    1. Conta o número total de registros
+    2. Imprime os primeiros registros
+    3. Busca e insere novos dados se necessário
+    
+    Returns:
+        bool: True se há registros, False caso contrário
+    """
     session = Session()
     try:
-        # Contar o número total de registros
+        # Contar registros
         count = session.query(IpcaModel).count()
         print(f"Número total de registros na tabela Ipca: {count}")
         
@@ -135,13 +151,57 @@ def verificar_dados_ipca():
         for registro in registros:
             print(f"Data: {registro.data}, Ipca: {registro.ipca}")
         
+        # Verificar a necessidade de atualização
+        ultimo_registro = session.query(IpcaModel).order_by(IpcaModel.data.desc()).first()
+        
+        # Data atual
+        data_atual = datetime.now().date()
+        
+        # Se não há registros, ou o último registro é de mais de 30 dias atrás
+        if not ultimo_registro or (data_atual - ultimo_registro.data).days >= 30:
+            logging.info("🔄 Iniciando atualização dos dados de IPCA")
+            
+            # Buscar novos dados
+            ipca_data = get_ipca_data()
+            
+            if ipca_data is not None:
+                # Converter datas
+                df = pd.DataFrame({
+                    'data': pd.to_datetime(ipca_data['dates'], format='%Y-%m-%d'),
+                    'valor': ipca_data['values']
+                })
+                
+                # Filtrar registros mais recentes que o último
+                if ultimo_registro:
+                    df = df[df['data'] > ultimo_registro.data]
+                
+                # Inserir novos registros
+                if not df.empty:
+                    try:
+                        ipca_records = [
+                            IpcaModel(data=row['data'], ipca=row['valor']) 
+                            for _, row in df.iterrows()
+                        ]
+                        
+                        session.bulk_save_objects(ipca_records)
+                        session.commit()
+                        
+                        logging.info(f"✅ Dados do IPCA atualizados: {len(ipca_records)} novos registros")
+                        print(f"✅ Dados do IPCA atualizados: {len(ipca_records)} novos registros")
+                    except Exception as e:
+                        session.rollback()
+                        logging.error(f"❌ Erro ao inserir dados do IPCA: {e}")
+                        print(f"❌ Erro ao inserir dados do IPCA: {e}")
+                else:
+                    logging.info("ℹ️ Nenhum novo dado de IPCA para inserir")
+                    print("ℹ️ Nenhum novo dado de IPCA para inserir")
+            else:
+                logging.warning("❌ Não foi possível obter dados do IPCA")
+                print("❌ Não foi possível obter dados do IPCA")
+        
         return count > 0
     except Exception as e:
         print(f"Erro ao verificar dados do Ipca: {e}")
         return False
     finally:
-        session.close()
-
-# Chame esta função no seu script de inicialização
-if __name__ == "__main__":
-    verificar_dados_ipca()                
+        session.close()              

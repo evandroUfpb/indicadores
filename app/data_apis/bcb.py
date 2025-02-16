@@ -126,7 +126,7 @@ def get_selic_data(period_start=None, period_end=None):
 
 # ------------------------ CAMBIO ---------------------------------------
 
-def get_cambio_data(start_date=None, end_date=None): #get_elic_data(start_date="2000-01-01", end_date=None):
+def get_cambio_data(start_date=None, end_date=None):
     """
     Obtém dados da Taxa de Câmbio do Brasil
     Série 1 - Taxa acumulada no mês
@@ -150,12 +150,21 @@ def get_cambio_data(start_date=None, end_date=None): #get_elic_data(start_date="
         # URL da API do BCB
         url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial={start}&dataFinal={end}"
         
-        # Faz a requisição
-        response = requests.get(url)
-        response.raise_for_status()
+        # Faz a requisição com timeout
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Levanta exceção para códigos de erro HTTP
+        
+        # Verifica se a resposta não está vazia
+        if not response.text.strip():
+            logging.warning("Resposta da API de Câmbio vazia")
+            return None
         
         # Converte para DataFrame
-        df = pd.DataFrame(response.json())
+        try:
+            df = pd.DataFrame(response.json())
+        except json.JSONDecodeError:
+            logging.error("Erro ao decodificar JSON da resposta de Câmbio")
+            return None
         
         # Converte data e valor
         df['data'] = pd.to_datetime(df['data'], format="%d/%m/%Y")
@@ -169,29 +178,27 @@ def get_cambio_data(start_date=None, end_date=None): #get_elic_data(start_date="
         
         # Prepara o resultado para o gráfico
         result = {
-            'dates': df['data'].dt.strftime('%Y-%m-%d').tolist(),
+            'dates': [pd.to_datetime(date).date() for date in df['data']],
             'values': df['valor'].tolist(),
             'label': 'Taxa de Câmbio Livre - PTAX, diária (venda)',
             'unit': 'R/US'
         }
         
+        # Log de diagnóstico
+        logging.info(f"✅ Dados de Câmbio processados:")
+        logging.info(f"   Número de registros: {len(result['dates'])}")
+        logging.info(f"   Período: {result['dates'][0]} a {result['dates'][-1]}")
+        logging.info(f"   Primeiro valor: {result['values'][0]}")
+        logging.info(f"   Último valor: {result['values'][-1]}")
+        
         return result
     
-    except Exception as e:
-        print(f"Erro ao buscar dados da Câmbio {str(e)}")
-        # return {
-        #     'dates': [],
-        #     'values': [],
-        #     'label': 'Taxa SELIC',
-        #     'unit': '% ao mês'
-        # }
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Erro de requisição na API de Câmbio: {e}")
         return None
-    r
-    #linhas adicionadas
-    
-    cache_key_str = cache_key('cambio', start=start_date, end=end_date), cache_key('ipca', start=start_date, end=end_date)
-    return get_cached_data(cache_key_str, fetch_data, expires_in=3600)      
-
+    except Exception as e:
+        logging.error(f"Erro inesperado ao buscar dados de Câmbio: {e}")
+        return None
 
 # ----------------- SALDO BC da PARAÍBA---------------- ------------------------------------------
 
@@ -332,7 +339,7 @@ def get_divliq_data(period_start=None, period_end=None):
             
             # Preparar resultado
             result = {
-                'dates': df['data'].dt.strftime('%Y%m%d').tolist(),
+                'dates': df['data'].dt.date.tolist(),
                 'values': df['valor'].tolist(),
                 'label': 'Dívida Líquida do Governo do Estado da Paraíba',
                 'unit': 'Milhões de Reais',
@@ -340,12 +347,12 @@ def get_divliq_data(period_start=None, period_end=None):
                 'data_fim': df['data'].max().strftime('%Y-%m-%d')
             }
             
-            # # Logs de diagnóstico
-            # logging.info(f"✅ Dados processados:")
-            # logging.info(f"   Número de registros: {len(result['dates'])}")
-            # logging.info(f"   Período: {result['data_inicio']} a {result['data_fim']}")
-            # logging.info(f"   Primeiro valor: {result['values'][0]}")
-            # logging.info(f"   Último valor: {result['values'][-1]}")
+            # Logs de diagnóstico
+            logging.info(f"✅ Dados processados:")
+            logging.info(f"   Número de registros: {len(result['dates'])}")
+            logging.info(f"   Período: {result['data_inicio']} a {result['data_fim']}")
+            logging.info(f"   Primeiro valor: {result['values'][0]}")
+            logging.info(f"   Último valor: {result['values'][-1]}")
             
             return result
         
