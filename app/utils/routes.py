@@ -9,6 +9,7 @@ from app.data_apis.conect_post.conect_post_cambio import get_cambio_data_from_db
 from app.data_apis.conect_post.conect_post_pib_pb import get_pib_pb_data_from_db
 from app.data_apis.conect_post.conect_post_sbcpb import get_bcpb_data_from_db
 from app.data_apis.conect_post.conect_post_desocupacao_pb import get_desocupacao_pb_data_from_db
+from app.data_apis.conect_post.conect_post_divliq_pb import get_divliq_data_from_db
 
 
 
@@ -278,3 +279,34 @@ def init_routes(app):
                 'label': 'BCPB do Brasil',
                 'unit': ''
             }), 500
+
+
+# Rota para o Dívida Pública DIVPUB
+    @app.route('/api/divpub')
+    def divpub_api():
+        try:
+            logging.info("Iniciando busca de dados do DIVPUB")
+            
+            data = get_divliq_data_from_db()
+            
+            if data is None:
+                logging.error("Dados do DIVPUB retornaram None")
+                return jsonify({
+                    'error': 'Não foi possível obter os dados do DIVPUB',
+                    'dates': [],
+                    'values': [],
+                    'label': 'Dívida Pública do Governo do Estado da Paraíba',
+                    'unit': ''
+                }), 500
+            
+            logging.info(f"Dados do DIVPUB obtidos: {len(data.get('dates', []))} registros")
+            return jsonify(data)
+        except Exception as e:
+            logging.error(f"Erro ao buscar dados do DIVPUB: {e}", exc_info=True)
+            return jsonify({
+                'error': str(e),
+                'dates': [],
+                'values': [],
+                'label': 'Dívida Pública do Governo do Estado da Paraíba',
+                'unit': ''
+            }), 500            

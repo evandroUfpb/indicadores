@@ -251,3 +251,111 @@ def get_bcpb_data(period_start=None, period_end=None):
     except Exception as e:
         logging.error(f"Erro ao buscar dados do BCPB: {e}", exc_info=True)
         return None
+
+
+
+# ----------------- Dívida líquida do Governo da PB ---------------------------------------
+
+def get_divliq_data(period_start=None, period_end=None):
+    """
+    Obtém dados da Dívida Líquida do Governo do Estado da Paraíba
+    
+    Args:
+        period_start (str, optional): Data de início do período
+        period_end (str, optional): Data de fim do período
+    
+    Returns:
+        dict: Dicionário com dados processados ou None em caso de erro
+    """
+    # Configurar headers para evitar bloqueios
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'application/json',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Referer': 'https://www.bcb.gov.br/'
+    }
+    
+    # URL para dados do DIVLIQ mensal
+    url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.15543/dados?formato=json"
+    
+    logging.info("🔍 Iniciando busca de dados do DIVLIQ")
+    logging.info(f"🌐 URL de requisição: {url}")
+    
+    try:
+        # Realizar requisição à API
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        # Registrar detalhes da resposta
+        logging.info(f"📡 Status da resposta DIVLIQ: {response.status_code}")
+        
+        # Verificação de conteúdo
+        if response.status_code != 200:
+            logging.error(f"❌ Erro na requisição do DIVLIQ: {response.status_code}")
+            logging.error(f"🔍 Detalhes da resposta: {response.text[:500]}")
+            return None
+        
+        # Decodificar JSON com tratamento de erro
+        try:
+            data = response.json()
+        except requests.exceptions.JSONDecodeError as json_err:
+            logging.error(f"❌ Erro de decodificação JSON: {json_err}")
+            logging.error(f"📄 Conteúdo da resposta: {response.text[:1000]}")
+            return None
+        
+        # Validação dos dados recebidos
+        if not isinstance(data, list):
+            logging.error(f"❌ Dados recebidos não são uma lista: {type(data)}")
+            return None
+        
+        # Verificação de registros
+        if not data:
+            logging.warning("⚠️ Nenhum registro recebido")
+            return None
+        
+        # Criar DataFrame com validação
+        try:
+            df = pd.DataFrame(data)
+            
+            # Verificar e renomear colunas
+            if set(df.columns) != {'data', 'valor'}:
+                logging.warning(f"⚠️ Colunas inesperadas: {df.columns}")
+                df = df.rename(columns={'data': 'data', 'valor': 'valor'})
+            
+            # Conversão de tipos
+            df['data'] = pd.to_datetime(df['data'], format='%d/%m/%Y')
+            df['valor'] = pd.to_numeric(df['valor'], errors='coerce')
+            
+            # Ordenar por data
+            df = df.sort_values('data')
+            
+            # Preparar resultado
+            result = {
+                'dates': df['data'].dt.strftime('%Y%m%d').tolist(),
+                'values': df['valor'].tolist(),
+                'label': 'Dívida Líquida do Governo do Estado da Paraíba',
+                'unit': 'Milhões de Reais',
+                'data_inicio': df['data'].min().strftime('%Y-%m-%d'),
+                'data_fim': df['data'].max().strftime('%Y-%m-%d')
+            }
+            
+            # # Logs de diagnóstico
+            # logging.info(f"✅ Dados processados:")
+            # logging.info(f"   Número de registros: {len(result['dates'])}")
+            # logging.info(f"   Período: {result['data_inicio']} a {result['data_fim']}")
+            # logging.info(f"   Primeiro valor: {result['values'][0]}")
+            # logging.info(f"   Último valor: {result['values'][-1]}")
+            
+            return result
+        
+        except Exception as e:
+            logging.error(f"❌ Erro no processamento dos dados: {e}")
+            return None
+    
+    except requests.RequestException as req_err:
+        logging.error(f"❌ Erro de requisição: {req_err}")
+        return None
+    except Exception as e:
+        logging.error(f"❌ Erro inesperado: {e}")
+        return None

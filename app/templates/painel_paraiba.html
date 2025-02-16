@@ -34,6 +34,16 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="card-title mb-0">Dívida Líquida</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="dividaPbChartFull" class="chart-container" style="width: 100%; height: 400px;"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -49,6 +59,7 @@
         fetchPIBPBData();
         fetchBcpbData();
         fetchDesocupacaoPbData();
+        fetchDivpubData();
     
         // Log adicional para verificar a função
         console.log('Função fetchDesocupacaoPbData:', fetchDesocupacaoPbData);

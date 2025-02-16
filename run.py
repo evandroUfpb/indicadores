@@ -37,6 +37,8 @@ from app.data_apis.conect_post.conect_post_cambio import popular_cambio_se_vazia
 
 from app.data_apis.conect_post.conect_post_sbcpb import popular_bcpb_se_vazia
 
+from app.data_apis.conect_post.conect_post_divliq_pb import popular_divliq_se_vazia, verificar_dados_divliq 
+
 # Antes de iniciar o aplicativo
 verificar_conexao_e_dados()
 popular_tabela_pib_se_vazia()
@@ -47,10 +49,18 @@ popular_cambio_se_vazia()
 popular_bcpb_se_vazia()
 popular_desocupacao_pb_se_vazia()
 verificar_dados_desocupacao_pb()
+popular_divliq_se_vazia()
+verificar_dados_divliq()
+
+
+# Verificação adicional da Dívida Pública
+print("\nVerificando dados da Dívida Pública:")
+verificar_dados_divliq()
+
+
 
 # Verificação adicional de dados
 print("\nVerificando dados de Desocupação:")
-verificar_dados_desocupacao()
 
 print("\nVerificando dados de Desocupação da Paraíba:")
 verificar_dados_desocupacao_pb()

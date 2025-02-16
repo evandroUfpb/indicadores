@@ -526,10 +526,10 @@ function fetchIpcaData(chartId = 'IpcaChartFull', endpoint = '/api/ipca') {
 }
 
 
-// Função compartilhada para buscar dados da SELEC para montar o gráfico full
+// Função compartilhada para buscar dados da SELIC para montar o gráfico full
 
 function fetchSelicData(chartId = 'SelicChartFull', endpoint = '/api/selic') {
-    console.log(`Iniciando busca de dados da SELEC no endpoint: ${endpoint}`);
+    console.log(`Iniciando busca de dados da SELIC no endpoint: ${endpoint}`);
     
     fetch(endpoint)
         .then(response => {
@@ -827,3 +827,99 @@ function fetchBcpbData(chartId = 'BcpbChartFull', endpoint = '/api/bcpb') {
         });
 }
 
+
+
+// Função compartilhada para buscar dados do DIVPUB e montar o gráfico full
+
+function fetchDivpubData(chartId = 'dividaPbChartFull', endpoint = '/api/divpub') {
+    console.log(`Iniciando busca de dados do DIVPUB no endpoint: ${endpoint}`);
+    
+    fetch(endpoint)
+        .then(response => {
+            console.log('Resposta para divpub:', response);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Dados de divida recebidos:', data);
+            
+            // Verificar se há dados
+            if (!data.dates || data.dates.length === 0) {
+                console.error('Nenhum dado de divida encontrado');
+                document.getElementById(chartId).innerHTML = 'Sem dados de divida disponíveis';
+                return;
+            }
+
+            const ctx = document.getElementById(chartId).getContext('2d');
+            
+            // Verificar se o contexto foi criado
+            if (!ctx) {
+                console.error('Não foi possível criar o contexto do gráfico do DIVPUB' );
+                return;
+            }
+
+            const formattedLabels = formatChartLabels(data.dates, 'monthly');
+
+            console.log('Labels formatadas:', formattedLabels);
+            console.log('Valores:', data.values);
+
+
+             // Criar datasets com cores condicionais
+             const datasets = [{
+                label: 'DIVPUB',
+                data: data.values,
+                borderWidth: 2,
+                tension: 0.1,
+                // Usar uma função para definir a cor baseada no valor
+                borderColor: data.values.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
+                backgroundColor: data.values.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
+                segment: {
+                    borderColor: ctx => {
+                        const value = ctx.p0DataIndex !== undefined ? data.values[ctx.p0DataIndex] : 0;
+                        return value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)';
+                    }
+                }
+            }];
+
+            window.ipcaChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: formattedLabels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Paraíba: Dívida Líquida do Governo'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: data.unit || 'Valor'
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Erro completo ao buscar dados de DIVPUB');
+            const chartElement = document.getElementById(chartId);
+            if (chartElement) {
+                chartElement.innerHTML = `Erro ao carregar dados de DIVPUB: ${error.message}`;
+            } else {
+                console.error('Elemento do gráfico não encontrado');
+            }
+        });
+}
