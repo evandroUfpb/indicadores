@@ -19,13 +19,15 @@ def get_pib_data():
     pib_br = (
         url
         .assign(
-            # Converter o código do trimestre para data
+            #Converter o código do trimestre para data
             data = lambda x: pd.to_datetime(
                 x["Trimestre (Código)"].str[:4] + '-' + 
                 (((x["Trimestre (Código)"].str[4:].astype(int) - 1) * 3 + 1).astype(str).str.zfill(2)) + 
                 '-01', 
                 format='%Y-%m-%d'
             ),
+
+            
             # Converter o valor corretamente
             pib = lambda x: x["Valor"].str.replace(',', '.').astype(float)
         )

@@ -38,8 +38,9 @@ function formatChartLabels(dates, formatType = 'trimester') {
 }
 
 
+
 // Função compartilhada para buscar dados do PIB e montar o gráfico full
-function fetchPIBData(dynamicRange = true) {
+function fetchPIBData() {
     console.log('🚀 Iniciando fetchPIBData()');
     
     const ctx = document.getElementById('pibChartFull');
@@ -73,38 +74,8 @@ function fetchPIBData(dynamicRange = true) {
                 return;
             }
 
-
-            // Lógica para intervalo dinâmico
-            let filteredDates = data.dates;
-            let filteredValues = data.values;
-
-            if (dynamicRange) {
-                // Encontrar a data mais recente
-                const lastDate = new Date(Math.max(...data.dates.map(date => new Date(date))));
-                
-                // Calcular data 10 anos atrás
-                const tenYearsAgo = new Date(lastDate.getFullYear() - 10, lastDate.getMonth(), lastDate.getDate());
-                
-                // Filtrar dados
-                const filteredData = data.dates.reduce((acc, date, index) => {
-                    const currentDate = new Date(date);
-                    if (currentDate >= tenYearsAgo) {
-                        acc.dates.push(date);
-                        acc.values.push(data.values[index]);
-                    }
-                    return acc;
-                }, { dates: [], values: [] });
-
-                filteredDates = filteredData.dates;
-                filteredValues = filteredData.values;
-
-                console.log(`🕰️ Dados filtrados de ${tenYearsAgo.toISOString().split('T')[0]} a ${lastDate.toISOString().split('T')[0]}`);
-            }
-
-            const formattedLabels = formatChartLabels(filteredDates, 'trimester');
-
-            //const formattedLabels = formatChartLabels(data.dates, 'trimester');
-            //console.log('🏷️ Labels formatados:', formattedLabels);
+            const formattedLabels = formatChartLabels(data.dates, 'trimester');
+            console.log('🏷️ Labels formatados:', formattedLabels);
 
             
             // Destruir gráfico existente, se houver
@@ -118,17 +89,16 @@ function fetchPIBData(dynamicRange = true) {
 
 
             const datasets = [{
-                label: 'PIB',
-                //data: data.values,
-                data: filteredValues,
+                label: 'PIBBR',
+                data: data.values,
                 borderWidth: 2,
                 tension: 0.1,
                 // Usar uma função para definir a cor baseada no valor
-                borderColor: filteredValues.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
-                backgroundColor: filteredValues.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
+                borderColor: data.values.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
+                backgroundColor: data.values.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
                 segment: {
                     borderColor: ctx => {
-                        const value = ctx.p0DataIndex !== undefined ? filteredValues[ctx.p0DataIndex] : 0;
+                        const value = ctx.p0DataIndex !== undefined ? data.values[ctx.p0DataIndex] : 0;
                         return value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)';
                     }
                 }
