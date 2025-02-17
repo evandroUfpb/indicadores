@@ -4,6 +4,7 @@ import requests
 import itertools
 from datetime import date, timedelta
 from tenacity import retry, stop_after_attempt, wait_fixed
+import json
 
 
 
@@ -14,55 +15,107 @@ def get_ipca_data(period_start=None, period_end=None):
     Obtém dados do IPCA do Banco Central do Brasil
     """
     try:
-        logging.info("Iniciando busca de dados do IPCA")
+        # Se não foi especificada uma data final, usa a data atual
+        if period_end is None:
+            period_end = date.today()
+        else:
+            period_end = pd.to_datetime(period_end).date()
+            
+        # Converte as datas para o formato da API
+        if period_start is None:
+            # Buscar dados dos últimos 180 dias
+            period_start = period_end - timedelta(days=180)
+        else:
+            period_start = pd.to_datetime(period_start).date()
+
+        # Log das datas para diagnóstico
+        logging.info(f"🕒 Intervalo de datas para busca de IPCA: {period_start} a {period_end}")
+
+        start = period_start.strftime("%d/%m/%Y")
+        end = period_end.strftime("%d/%m/%Y")
+            
+        # URL da API do BCB
+        url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial={start}&dataFinal={end}"
         
-        # URL para dados do IPCA mensal
-        url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json"
+        logging.info(f"🌐 URL de requisição IPCA: {url}")
         
-        # Adicionar headers para evitar bloqueios
+        # Configurações para melhorar resiliência
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
+
+        # Aumentar timeout e adicionar retry
+        from requests.adapters import HTTPAdapter
+        from requests.packages.urllib3.util.retry import Retry
+
+        retry_strategy = Retry(
+            total=3,  # Número total de tentativas
+            status_forcelist=[429, 500, 502, 503, 504],  # Códigos de status para retry
+            allowed_methods=["GET"],
+            backoff_factor=1  # Tempo entre as tentativas aumenta exponencialmente
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session = requests.Session()
+        session.mount("https://", adapter)
+
+        # Faz a requisição com timeout maior
+        response = session.get(url, headers=headers, timeout=30)
         
-        response = requests.get(url, headers=headers, timeout=10)
+        # Log do status da resposta
+        logging.info(f"📡 Status da resposta IPCA: {response.status_code}")
         
-        logging.info(f"Status da resposta IPCA: {response.status_code}")
-        logging.info(f"Conteúdo da resposta: {response.text[:500]}...")  # Mostra os primeiros 500 caracteres
+        response.raise_for_status()  # Levanta exceção para códigos de erro HTTP
         
-        if response.status_code != 200:
-            logging.error(f"Erro na requisição do IPCA: {response.status_code}")
+        # Verifica se a resposta não está vazia
+        if not response.text.strip():
+            logging.warning("Resposta da API de IPCA vazia")
             return None
         
+        # Log do conteúdo da resposta para diagnóstico
+        logging.info(f"📊 Conteúdo da resposta de IPCA: {response.text[:500]}...")
+        
+        # Converte para DataFrame
         try:
-            data = response.json()
-        except requests.exceptions.JSONDecodeError as json_err:
-            logging.error(f"Erro de decodificação JSON: {json_err}")
-            logging.error(f"Conteúdo da resposta: {response.text}")
+            df = pd.DataFrame(response.json())
+        except json.JSONDecodeError as e:
+            logging.error(f"Erro ao decodificar JSON da resposta de IPCA: {e}")
+            logging.error(f"Conteúdo da resposta que causou erro: {response.text}")
             return None
         
-        # Processamento dos dados
-        df = pd.DataFrame(data)
-        df['data'] = pd.to_datetime(df['data'], format='%d/%m/%Y')
+        # Converte data e valor
+        df['data'] = pd.to_datetime(df['data'], format="%d/%m/%Y")
+        df['valor'] = pd.to_numeric(df['valor'], errors='coerce')
         
-        # Filtrar dados a partir de 2002
-        df = df[df['data'] >= '01/01/2012']
+        # Remove valores nulos
+        df = df.dropna()
         
-        df.set_index('data', inplace=True)
+        # Ordena por data
+        df = df.sort_values('data')
         
-        # Ordenar por data
-        df = df.sort_index()
-        
+        # Prepara o resultado para o gráfico
         result = {
-            'dates': df.index.strftime('%Y%m'),  # Formato YYYYMM
-            'ipca': df['valor'],
-            }
+            'dates': [pd.to_datetime(date).date() for date in df['data']],
+            'values': df['valor'].tolist(),
+            'label': 'IPCA - Índice Nacional de Preços ao Consumidor Amplo',
+            'unit': '%'
+        }
         
-        logging.info(f"Dados do IPCA processados: {len(result['dates'])} registros")
-        return df
+        # Log de diagnóstico
+        logging.info(f"✅ Dados de IPCA processados:")
+        logging.info(f"   Número de registros: {len(result['dates'])}")
+        logging.info(f"   Período: {result['dates'][0]} a {result['dates'][-1]}")
+        logging.info(f"   Primeiro valor: {result['values'][0]}")
+        logging.info(f"   Último valor: {result['values'][-1]}")
+        
+        return result
     
-    except Exception as e:
-        logging.error(f"Erro ao buscar dados do IPCA: {e}", exc_info=True)
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Erro de requisição na API de IPCA: {e}")
         return None
+    except Exception as e:
+        logging.error(f"Erro inesperado ao buscar dados de IPCA: {e}")
+        return None
+
 
 
 # ----------------- SELIC -------- ------------------------------------------
@@ -291,8 +344,24 @@ def get_divliq_data(period_start=None, period_end=None):
     logging.info(f"🌐 URL de requisição: {url}")
     
     try:
+
+        # Realizar requisição à API com retry
+        from requests.adapters import HTTPAdapter
+        from requests.packages.urllib3.util.retry import Retry
+
+        retry_strategy = Retry(
+            total=3,  # Número total de tentativas
+            status_forcelist=[429, 500, 502, 503, 504],  # Códigos de status para retry
+            allowed_methods=["GET"],
+            backoff_factor=1  # Tempo entre as tentativas aumenta exponencialmente
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session = requests.Session()
+        session.mount("https://", adapter)    
+
+
         # Realizar requisição à API
-        response = requests.get(url, headers=headers, timeout=10)
+        response = session.get(url, headers=headers, timeout=30)
         
         # Registrar detalhes da resposta
         logging.info(f"📡 Status da resposta DIVLIQ: {response.status_code}")

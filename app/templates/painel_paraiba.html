@@ -59,7 +59,10 @@
         fetchPIBPBData();
         fetchBcpbData();
         fetchDesocupacaoPbData();
-        fetchDivpubData();
+        // Ativa o filtro dinâmico
+        //fetchDivpubData();
+        // Desativa o filtro dinâmico
+        fetchDivpubData('dividaPbChartFull', '/api/divpub', false)
     
         // Log adicional para verificar a função
         console.log('Função fetchDesocupacaoPbData:', fetchDesocupacaoPbData);

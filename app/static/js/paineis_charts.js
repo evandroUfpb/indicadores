@@ -38,9 +38,8 @@ function formatChartLabels(dates, formatType = 'trimester') {
 }
 
 
-
 // Função compartilhada para buscar dados do PIB e montar o gráfico full
-function fetchPIBData() {
+function fetchPIBData(dynamicRange = true) {
     console.log('🚀 Iniciando fetchPIBData()');
     
     const ctx = document.getElementById('pibChartFull');
@@ -74,8 +73,38 @@ function fetchPIBData() {
                 return;
             }
 
-            const formattedLabels = formatChartLabels(data.dates, 'trimester');
-            console.log('🏷️ Labels formatados:', formattedLabels);
+
+            // Lógica para intervalo dinâmico
+            let filteredDates = data.dates;
+            let filteredValues = data.values;
+
+            if (dynamicRange) {
+                // Encontrar a data mais recente
+                const lastDate = new Date(Math.max(...data.dates.map(date => new Date(date))));
+                
+                // Calcular data 10 anos atrás
+                const tenYearsAgo = new Date(lastDate.getFullYear() - 10, lastDate.getMonth(), lastDate.getDate());
+                
+                // Filtrar dados
+                const filteredData = data.dates.reduce((acc, date, index) => {
+                    const currentDate = new Date(date);
+                    if (currentDate >= tenYearsAgo) {
+                        acc.dates.push(date);
+                        acc.values.push(data.values[index]);
+                    }
+                    return acc;
+                }, { dates: [], values: [] });
+
+                filteredDates = filteredData.dates;
+                filteredValues = filteredData.values;
+
+                console.log(`🕰️ Dados filtrados de ${tenYearsAgo.toISOString().split('T')[0]} a ${lastDate.toISOString().split('T')[0]}`);
+            }
+
+            const formattedLabels = formatChartLabels(filteredDates, 'trimester');
+
+            //const formattedLabels = formatChartLabels(data.dates, 'trimester');
+            //console.log('🏷️ Labels formatados:', formattedLabels);
 
             
             // Destruir gráfico existente, se houver
@@ -89,21 +118,21 @@ function fetchPIBData() {
 
 
             const datasets = [{
-                label: 'BCPB',
-                data: data.values,
+                label: 'PIB',
+                //data: data.values,
+                data: filteredValues,
                 borderWidth: 2,
                 tension: 0.1,
                 // Usar uma função para definir a cor baseada no valor
-                borderColor: data.values.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
-                backgroundColor: data.values.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
+                borderColor: filteredValues.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
+                backgroundColor: filteredValues.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
                 segment: {
                     borderColor: ctx => {
-                        const value = ctx.p0DataIndex !== undefined ? data.values[ctx.p0DataIndex] : 0;
+                        const value = ctx.p0DataIndex !== undefined ? filteredValues[ctx.p0DataIndex] : 0;
                         return value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)';
                     }
                 }
             }];
-
 
 
             window.pibChart = new Chart(ctxChart, {
@@ -270,7 +299,7 @@ function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
 
 
  // Função compartilhada para buscar dados de Desocupação para montar o gráfico full
-  function fetchDesocupacaoData(chartId = 'desocupacaoChartFull', endpoint = '/api/desocupacao') {
+  function fetchDesocupacaoData(chartId = 'desocupacaoChartFull', endpoint = '/api/desocupacao', dynamicRange = true) {
     console.log(`🔍 Iniciando busca de dados no endpoint: ${endpoint}`);
     
     const chartElement = document.getElementById(chartId);
@@ -300,18 +329,51 @@ function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
 
             const ctx = chartElement.getContext('2d');
             
-            // Destruir gráfico existente
-            if (window.desocupacaoChart instanceof Chart) {
-                window.desocupacaoChart.destroy();
+
+            // Lógica para intervalo dinâmico 
+
+            let filteredDates = data.dates;
+            let filteredValues = data.values;
+
+            if (dynamicRange) {
+                // Encontrar a data mais recente
+                const lastDate = new Date(Math.max(...data.dates.map(date => new Date(date))));
+                
+                // Calcular data 10 anos atrás
+                const tenYearsAgo = new Date(lastDate.getFullYear() - 10, lastDate.getMonth(), lastDate.getDate());
+                
+                // Filtrar dados
+                const filteredData = data.dates.reduce((acc, date, index) => {
+                    const currentDate = new Date(date);
+                    if (currentDate >= tenYearsAgo) {
+                        acc.dates.push(date);
+                        acc.values.push(data.values[index]);
+                    }
+                    return acc;
+                }, { dates: [], values: [] });
+
+                filteredDates = filteredData.dates;
+                filteredValues = filteredData.values;
+
+                console.log(`🕰️ Dados filtrados de ${tenYearsAgo.toISOString().split('T')[0]} a ${lastDate.toISOString().split('T')[0]}`);
             }
+
+            const formattedLabels = formatChartLabels(filteredDates, 'yearMonth');
+
+            // // Destruir gráfico existente
+            // if (window.desocupacaoChart instanceof Chart) {
+            //     window.desocupacaoChart.destroy();
+            // }
 
             window.desocupacaoChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.dates,
+                    labels: formattedLabels,
+                    //labels: data.dates,
                     datasets: [{
                         label: 'Taxa de Desocupação',
-                        data: data.values,
+                        //data: data.values,
+                        data: filteredValues,
                         borderColor: 'rgb(75, 192, 192)',
                         tension: 0.1
                     }]
@@ -354,7 +416,7 @@ function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
 
 
 
-function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '/api/desocupacao_pb') {
+function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '/api/desocupacao_pb', dynamicRange = true   ) {
     console.log(`Iniciando busca de dados de Desocupação da Paraíba no endpoint: ${endpoint}`);
     
     fetch(endpoint)
@@ -380,8 +442,35 @@ function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '
                 return;
             }
 
+            // Lógica para intervalo dinâmico
+            let filteredDates = data.dates;
+            let filteredValues = data.values;
+
+            if (dynamicRange) {
+                // Encontrar a data mais recente
+                const lastDate = new Date(Math.max(...data.dates.map(date => new Date(date))));
+                
+                // Calcular data 10 anos atrás
+                const tenYearsAgo = new Date(lastDate.getFullYear() - 10, lastDate.getMonth(), lastDate.getDate());
+                
+                // Filtrar dados
+                const filteredData = data.dates.reduce((acc, date, index) => {
+                    const currentDate = new Date(date);
+                    if (currentDate >= tenYearsAgo) {
+                        acc.dates.push(date);
+                        acc.values.push(data.values[index]);
+                    }
+                    return acc;
+                }, { dates: [], values: [] });
+
+                filteredDates = filteredData.dates;
+                filteredValues = filteredData.values;
+            }
+
             // Formatar labels com trimestre
-            const formattedLabels = formatChartLabels(data.dates, 'trimester');
+            // const formattedLabels = formatChartLabels(data.dates, 'trimester');
+            
+            const formattedLabels = formatChartLabels(filteredDates, 'trimester');
 
             // Destruir gráfico existente, se houver
             if (window.desocupacaoPbChart instanceof Chart) {
@@ -394,7 +483,8 @@ function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '
                     labels: formattedLabels,
                     datasets: [{
                         label: 'Taxa de Desocupação da Paraíba (%)',
-                        data: data.values,
+                        // data: data.values,
+                        data: filteredValues,
                         borderColor: 'rgb(75, 192, 192)',
                         tension: 0.1
                     }]
@@ -447,122 +537,23 @@ function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '
 
 
 
+/// Estou inserindo a lógica da data aqui
 
-
-// // Função compartilhada para buscar dados de Desocupação da Paraiba para montar o gráfico full
-// function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '/api/desocupacao_pb') {
-//     console.log(`Iniciando busca de dados de Desocupação no endpoint: ${endpoint}`);
-    
-//     fetch(endpoint)
-//         .then(response => {
-//             console.log('Resposta para Desocupacao da Paraíba:', response);
-//             if (!response.ok) {
-//                 throw new Error(`HTTP error! status: ${response.status}`);
-//             }
-//             return response.json();
-//         })
-//         .then(data => {
-//             console.log('Dados de Desocupação da Paraíba recebidos:', data);
-            
-//             // Verificar se há dados
-//             if (!data.dates || data.dates.length === 0) {
-//                 console.error('Nenhum dado de Desocupação da Paraíba encontrado');
-//                 document.getElementById(chartId).innerHTML = 'Sem dados de Desocupação da Paraíba disponíveis';
-//                 return;
-//             }
-
-//             const ctx = document.getElementById(chartId).getContext('2d');
-            
-//             // Verificar se o contexto foi criado
-//             if (!ctx) {
-//                 console.error('Não foi possível criar o contexto do gráfico de Desocupacao' );
-//                 return;
-//             }
-
-            
-//             const formattedLabels = formatChartLabels(data.dates, 'trimester');
-
-//             console.log('Labels formatadas:', formattedLabels);
-//             console.log('Valores:', data.values);
-
-//             window.desocupacaoChart = new Chart(ctx, {
-//                 type: 'line',
-//                 data: {
-//                     labels: data.dates,
-//                     //labels: formattedLabels,
-//                     datasets: [{
-//                         label: 'Desocupação',
-//                         data: data.values,
-//                         borderColor: 'rgb(70, 130, 180)',
-//                         backgroundColor: 'rgb(70, 130, 180, 0.2)',
-//                         borderWidth: 2,
-//                         tension: 0.1
-//                     }]
-//                 },
-//                 options: {
-//                     responsive: true,
-//                     maintainAspectRatio: false,
-//                     plugins: {
-//                         legend: {
-//                             display: false
-//                         },
-//                         title: {
-//                             display: true,
-//                             text: 'Paraíba: Taxa de Desocupação Trimestral'
-//                         }
-//                     },
-//                     scales: {
-//                         x: {
-//                             title: {
-//                                 display: false,
-//                                 text: 'Data'
-//                             }
-//                         },
-//                         y: {
-//                             beginAtZero: false,
-//                             title: {
-//                                 display: true,
-//                                 text: '(%)'
-//                             }
-//                         }
-//                     }
-//                 }
-//             });
-//         })
-//         .catch(error => {
-//             console.error('Erro completo ao buscar dados de Desocupacao');
-//             const chartElement = document.getElementById(chartId);
-//             if (chartElement) {
-//                 chartElement.innerHTML = `Erro ao carregar dados de Desocupacao: ${error.message}`;
-//             } else {
-//                 console.error('Elemento do gráfico não encontrado');
-//             }
-//         });
-// }
-
-
-
-
-
-// Função compartilhada para buscar dados do IPCA para montar o gráfico full
-function fetchIpcaData(chartId = 'IpcaChartFull', endpoint = '/api/ipca') {
+function fetchIpcaData(chartId = 'IpcaChartFull', endpoint = '/api/ipca', dynamicRange = true) {
     console.log(`Iniciando busca de dados do IPCA no endpoint: ${endpoint}`);
     
     fetch(endpoint)
         .then(response => {
-            console.log('Resposta para ipca:', response);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Dados de ipca recebidos:', data);
-            
             // Verificar se há dados
             if (!data.dates || data.dates.length === 0) {
-                console.error('Nenhum dado de ipca encontrado');
-                document.getElementById(chartId).innerHTML = 'Sem dados de ipca disponíveis';
+                console.error('Nenhum dado de IPCA encontrado');
+                document.getElementById(chartId).innerHTML = 'Sem dados do IPCA disponíveis';
                 return;
             }
 
@@ -570,31 +561,48 @@ function fetchIpcaData(chartId = 'IpcaChartFull', endpoint = '/api/ipca') {
             
             // Verificar se o contexto foi criado
             if (!ctx) {
-                console.error('Não foi possível criar o contexto do gráfico do ipca' );
+                console.error('Não foi possível criar o contexto do gráfico do IPCA');
                 return;
             }
 
-            // // Converter datas para formato mais legível
-            // const formattedLabels = data.dates.map(date => {
-            //     // Assumindo que as datas estão no formato YYYY-MM-DD ou YYYY
-            //     const dateObj = new Date(date);
-            //     return dateObj.getFullYear().toString();
-            // });
+            // Lógica para intervalo dinâmico
+            let filteredDates = data.dates;
+            let filteredValues = data.values;
 
-            const formattedLabels = formatChartLabels(data.dates, 'monthly');
+            if (dynamicRange) {
+                // Encontrar a data mais recente
+                const lastDate = new Date(Math.max(...data.dates.map(date => new Date(date))));
+                
+                // Calcular data 10 anos atrás
+                const tenYearsAgo = new Date(lastDate.getFullYear() - 10, lastDate.getMonth(), lastDate.getDate());
+                
+                // Filtrar dados
+                const filteredData = data.dates.reduce((acc, date, index) => {
+                    const currentDate = new Date(date);
+                    if (currentDate >= tenYearsAgo) {
+                        acc.dates.push(date);
+                        acc.values.push(data.values[index]);
+                    }
+                    return acc;
+                }, { dates: [], values: [] });
 
-            console.log('Labels formatadas:', formattedLabels);
-            console.log('Valores:', data.values);
+                filteredDates = filteredData.dates;
+                filteredValues = filteredData.values;
+
+                console.log(`🕰️ Dados filtrados de ${tenYearsAgo.toISOString().split('T')[0]} a ${lastDate.toISOString().split('T')[0]}`);
+            }
+
+            const formattedLabels = formatChartLabels(filteredDates, 'yearMonth');
 
             window.ipcaChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: formattedLabels,
                     datasets: [{
-                        label: 'IPCA',
-                        data: data.values,
-                        borderColor: 'rgb(135,206,250)',
-                        backgroundColor: 'rgba(135,206,250, 0.2)',
+                        label: data.label || 'IPCA',
+                        data: filteredValues,
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
                         borderWidth: 2,
                         tension: 0.1
                     }]
@@ -608,7 +616,7 @@ function fetchIpcaData(chartId = 'IpcaChartFull', endpoint = '/api/ipca') {
                         },
                         title: {
                             display: true,
-                            text: 'Brasil: IPCA - Mensal'
+                            text: 'Índice Nacional de Preços ao Consumidor Amplo (IPCA)'
                         }
                     },
                     scales: {
@@ -616,7 +624,7 @@ function fetchIpcaData(chartId = 'IpcaChartFull', endpoint = '/api/ipca') {
                             beginAtZero: false,
                             title: {
                                 display: true,
-                                text: data.unit || 'Valor'
+                                text: data.unit || '%'
                             }
                         }
                     }
@@ -624,10 +632,10 @@ function fetchIpcaData(chartId = 'IpcaChartFull', endpoint = '/api/ipca') {
             });
         })
         .catch(error => {
-            console.error('Erro completo ao buscar dados de Desocupacao');
+            console.error('❌ Erro ao buscar dados do IPCA:', error);
             const chartElement = document.getElementById(chartId);
             if (chartElement) {
-                chartElement.innerHTML = `Erro ao carregar dados de Desocupacao: ${error.message}`;
+                chartElement.innerHTML = `Erro ao carregar dados do IPCA: ${error.message}`;
             } else {
                 console.error('Elemento do gráfico não encontrado');
             }
@@ -635,9 +643,10 @@ function fetchIpcaData(chartId = 'IpcaChartFull', endpoint = '/api/ipca') {
 }
 
 
+
 // Função compartilhada para buscar dados da SELIC para montar o gráfico full
 
-function fetchSelicData(chartId = 'SelicChartFull', endpoint = '/api/selic') {
+function fetchSelicData(chartId = 'SelicChartFull', endpoint = '/api/selic', dynamicRange = true) {
     console.log(`Iniciando busca de dados da SELIC no endpoint: ${endpoint}`);
     
     fetch(endpoint)
@@ -666,18 +675,40 @@ function fetchSelicData(chartId = 'SelicChartFull', endpoint = '/api/selic') {
                 return;
             }
 
-            // // Converter datas para formato mais legível
-            // const formattedLabels = data.dates.map(date => {
-            //     // Assumindo que as datas estão no formato YYYY-MM-DD ou YYYY
-            //     const dateObj = new Date(date);
-            //     return dateObj.getFullYear().toString();
-            // });
+            // Lógica para intervalo dinâmico
+            let filteredDates = data.dates;
+            let filteredValues = data.values;
 
-            const formattedLabels = formatChartLabels(data.dates, 'monthly');
+            if (dynamicRange) {
+                // Encontrar a data mais recente
+                const lastDate = new Date(Math.max(...data.dates.map(date => new Date(date))));
+                
+                // Calcular data 10 anos atrás
+                const tenYearsAgo = new Date(lastDate.getFullYear() - 10, lastDate.getMonth(), lastDate.getDate());
+                
+                // Filtrar dados
+                const filteredData = data.dates.reduce((acc, date, index) => {
+                    const currentDate = new Date(date);
+                    if (currentDate >= tenYearsAgo) {
+                        acc.dates.push(date);
+                        acc.values.push(data.values[index]);
+                    }
+                    return acc;
+                }, { dates: [], values: [] });
 
+                filteredDates = filteredData.dates;
+                filteredValues = filteredData.values;
+
+                console.log(`🕰️ Dados filtrados de ${tenYearsAgo.toISOString().split('T')[0]} a ${lastDate.toISOString().split('T')[0]}`);
+            }
+
+            // Fim da lógica para intervalo dinâmico
+
+            // const formattedLabels = formatChartLabels(data.dates, 'monthly');
+            const formattedLabels = formatChartLabels(filteredDates, 'yearMonth');
 
             console.log('Labels formatadas:', formattedLabels);
-            console.log('Valores:', data.values);
+            console.log('Valores:', filteredValues);
 
             window.selicChart = new Chart(ctx, {
                 type: 'line',
@@ -759,13 +790,7 @@ function fetchCambioData(chartId = 'CambioChartFull', endpoint = '/api/cambio') 
                 return;
             }
 
-            // // Converter datas para formato mais legível
-            // const formattedLabels = data.dates.map(date => {
-            //     // Assumindo que as datas estão no formato YYYY-MM-DD ou YYYY
-            //     const dateObj = new Date(date);
-            //     return dateObj.getFullYear().toString();
-            // });
-
+           
             const formattedLabels = formatChartLabels(data.dates, 'daily');
 
 
@@ -949,11 +974,9 @@ function fetchBcpbData(chartId = 'BcpbChartFull', endpoint = '/api/bcpb') {
 }
 
 
-
-
 // Função compartilhada para buscar dados do DIVPUB e montar o gráfico full
 
-function fetchDivpubData(chartId = 'dividaPbChartFull', endpoint = '/api/divpub') {
+function fetchDivpubData(chartId = 'dividaPbChartFull', endpoint = '/api/divpub', dynamicRange = true) {
     console.log(`Iniciando busca de dados do DIVPUB no endpoint: ${endpoint}`);
     
     fetch(endpoint)
@@ -976,16 +999,46 @@ function fetchDivpubData(chartId = 'dividaPbChartFull', endpoint = '/api/divpub'
 
             const ctx = document.getElementById(chartId).getContext('2d');
             
-            // Verificar se o contexto foi criado
+                        // Verificar se o contexto foi criado
             if (!ctx) {
                 console.error('Não foi possível criar o contexto do gráfico do DIVPUB' );
                 return;
             }
 
-            const formattedLabels = formatChartLabels(data.dates, 'monthly');
+
+            // Lógica para intervalo dinâmico
+            let filteredDates = data.dates;
+            let filteredValues = data.values;
+
+            if (dynamicRange) {
+                // Encontrar a data mais recente
+                const lastDate = new Date(Math.max(...data.dates.map(date => new Date(date))));
+                
+                // Calcular data 10 anos atrás
+                const tenYearsAgo = new Date(lastDate.getFullYear() - 15, lastDate.getMonth(), lastDate.getDate());
+                
+                // Filtrar dados
+                const filteredData = data.dates.reduce((acc, date, index) => {
+                    const currentDate = new Date(date);
+                    if (currentDate >= tenYearsAgo) {
+                        acc.dates.push(date);
+                        acc.values.push(data.values[index]);
+                    }
+                    return acc;
+                }, { dates: [], values: [] });
+
+                filteredDates = filteredData.dates;
+                filteredValues = filteredData.values;
+
+                console.log(`🕰️ Dados filtrados de ${tenYearsAgo.toISOString().split('T')[0]} a ${lastDate.toISOString().split('T')[0]}`);
+            }
+
+
+            //const formattedLabels = formatChartLabels(data.dates, 'monthly');
+            const formattedLabels = formatChartLabels(filteredDates, 'yearMonth');
 
             console.log('Labels formatadas:', formattedLabels);
-            console.log('Valores:', data.values);
+            console.log('Valores:', filteredValues);
 
 
              // Criar datasets com cores condicionais

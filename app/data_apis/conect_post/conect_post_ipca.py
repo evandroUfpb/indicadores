@@ -167,9 +167,15 @@ def verificar_dados_ipca():
             if ipca_data is not None:
                 # Converter datas
                 df = pd.DataFrame({
-                    'data': pd.to_datetime(ipca_data['dates'], format='%Y-%m-%d'),
+                    #'data': pd.to_datetime(ipca_data['dates'], format='%Y-%m-%d'),
+                    'data': pd.to_datetime(ipca_data['dates']).date,
                     'valor': ipca_data['values']
                 })
+
+                # Log de diagnóstico
+                logging.info(f"Dados recebidos do IPCA: {len(df)} registros")
+                logging.info(f"Primeiro registro: {df.iloc[0]['data']}, Último registro: {df.iloc[-1]['data']}")
+
                 
                 # Filtrar registros mais recentes que o último
                 if ultimo_registro:

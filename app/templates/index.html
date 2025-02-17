@@ -225,15 +225,23 @@
                     console.log('Resposta da Ipca:', response);
                     return response.json();
                 })
-                .then(data => {
-                    console.log('Dados da Ipca recebidos:', data);
+                // .then(data => {
+                //     console.log('Dados da Ipca recebidos:', data);
                     
+                //     // Verificar se há dados
+                //     if (!data.dates || data.dates.length === 0) {
+                //         console.error('Nenhum dado de Ipca encontrado');
+                //         document.getElementById('ipcaChart').innerHTML = 'Sem dados do Ipca disponíveis';
+                //         return;
+                //     }
+
+                .then(data => {
                     // Verificar se há dados
                     if (!data.dates || data.dates.length === 0) {
-                        console.error('Nenhum dado de Ipca encontrado');
-                        document.getElementById('ipcaChart').innerHTML = 'Sem dados do Ipca disponíveis';
+                        console.error('Nenhum dado de IPCA encontrado');
+                        document.getElementById('ipcaChart').innerHTML = 'Sem dados do IPCA disponíveis';
                         return;
-                    }
+            }
 
                     const ctx = document.getElementById('ipcaChart').getContext('2d');
                     
