@@ -9,21 +9,21 @@ def start_etl_scheduler():
     scheduler = BlockingScheduler()
     
     # # Agendar atualização diária do Câmbio
-    # scheduler.add_job(
-    #     atualizar_cambio_diariamente, 
-    #     'cron', 
-    #     hour=1,  # Às 1 da manhã
-    #     minute=0
-    # )
-
-    # Agendar jobs para rodar no primeiro dia de cada mês
     scheduler.add_job(
         verificar_dados_cambio, 
         'cron', 
-        day=1,  # Primeiro dia do mês
-        hour=3,  # Às 3 da manhã
+        hour=1,  # Às 1 da manhã
         minute=0
     )
+
+    # Agendar jobs para rodar no primeiro dia de cada mês
+    # scheduler.add_job(
+    #     verificar_dados_cambio, 
+    #     'cron', 
+    #     day=1,  # Primeiro dia do mês
+    #     hour=3,  # Às 3 da manhã
+    #     minute=0
+    # )
     
     scheduler.add_job(
         verificar_dados_ipca, 
