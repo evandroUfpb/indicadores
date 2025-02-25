@@ -1,9 +1,10 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import logging
 import pandas as pd
 from sqlalchemy import Column, Date, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import func
 from app.data_apis.bcb import get_cambio_data
 from app.data_apis.conect_post.database import Session, engine
 
@@ -75,18 +76,47 @@ def get_cambio_data_from_db():
             logging.warning("Nenhum registro encontrado na tabela CAMBIO")
             return None
         
+        
+        # INSERINDO A LOGIA PARA FILTRAR OS 30 DIAS
+
+        # Obter a última data disponível na tabela
+        last_record = session.query(func.max(CambioModel.data)).scalar()
+        
+        if last_record is None:
+            logging.warning("Nenhum registro encontrado na tabela de câmbio.")
+            return None  # Ou você pode retornar uma estrutura padrão
+
+        # Calcular a data inicial como 30 dias antes da última data
+        start_date = last_record - timedelta(days=30)
+
+        # Consulta SQL para buscar dados a partir da data calculada
+        cambio_data = session.query(CambioModel).filter(CambioModel.data >= start_date).order_by(CambioModel.data).all()
+
+
+        # FIM DA LOGIA PARA OS 30 DIAS
+
         # Converter para dicionário
+       
+        # data = {
+        #     'dates': [record.data.strftime('%Y-%m-%d') for record in cambio_records],
+        #     'values': [float(record.cambio) for record in cambio_records],
+        #     'label': 'CAMBIO',
+        #     'unit': '%'
+        # }
+
+        # Processar os resultados
+        data = [record.data.strftime('%Y-%m-%d') for record in cambio_data]
+        values = [record.cambio for record in cambio_data]
+
+
         data = {
-            'dates': [record.data.strftime('%Y-%m-%d') for record in cambio_records],
-            'values': [float(record.cambio) for record in cambio_records],
+            'dates': data,
+            'values': values,
             'label': 'CAMBIO',
             'unit': '%'
         }
-        
-        # Log dos dados
-        ## logging.info(f"Datas: {data['dates']}")
-        ## logging.info(f"Valores: {data['values']}")
-        
+
+                
         return data
     except Exception as e:
         logging.error(f"Erro ao buscar dados da CAMBIO: {e}")

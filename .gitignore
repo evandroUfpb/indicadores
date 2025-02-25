@@ -170,3 +170,6 @@ tmp/
 
 # Arquivos de configuração do Windows
 $RECYCLE.BIN/
+
+# Arquivos do disretório
+resultado_fiscal.ipynb
