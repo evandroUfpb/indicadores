@@ -159,14 +159,21 @@ def get_selic_data(period_start=None, period_end=None):
         df = df[df['data'] >= '2012-01-01']
         
         # Agrupar por mês (média mensal)
-        df_monthly = df.groupby(pd.Grouper(key='data', freq='M')).mean().reset_index()
+        #df_monthly = df.groupby(pd.Grouper(key='data', freq='M')).mean().reset_index()
         
         result = {
-            'dates': df_monthly['data'].dt.strftime('%Y-%m').tolist(),
-            'values': df_monthly['valor'].tolist(),
-            'label': 'Taxa SELIC Mensal',
-            'unit': '%'
-        }
+             'dates': df['data'].dt.strftime('%Y-%m-01').tolist(),
+             'values': df['valor'].tolist(),
+             'label': 'Taxa SELIC Mensal',
+             'unit': '%'
+         }
+        
+        # result = {
+        #     'dates': df_monthly['data'].dt.strftime('%Y-%m-01').tolist(),
+        #     'values': df_monthly['valor'].tolist(),
+        #     'label': 'Taxa SELIC Mensal',
+        #     'unit': '%'
+        # }
         
         logging.info(f"Dados da SELIC processados: {len(result['dates'])} registros")
         return result

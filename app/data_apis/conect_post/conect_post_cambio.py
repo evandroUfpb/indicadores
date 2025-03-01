@@ -61,62 +61,47 @@ def get_cambio_data_from_db():
         connection = session.connection()
         logging.info("Conexão com o banco estabelecida com sucesso")
         
-        # Buscar todos os registros ordenados por data
-        cambio_records = session.query(CambioModel).order_by(CambioModel.data).all()
+        # Obter a última data disponível na tabela
+        last_record_date = session.query(func.max(CambioModel.data)).scalar()
         
-        # Log detalhado
-        logging.info(f"Número de registros encontrados: {len(cambio_records)}")
+        if last_record_date is None:
+            logging.warning("Nenhum registro encontrado na tabela de câmbio.")
+            return None
+
+        # Calcular a data inicial como 30 dias antes da última data
+        start_date = last_record_date - timedelta(days=30)
         
-        # Imprimir detalhes de cada registro
-        for record in cambio_records[:5]:  # Mostrar os primeiros 5 registros
-            logging.info(f"Registro: Data={record.data}, cambio={record.cambio}")
+        # Buscar registros dos últimos 30 dias
+        cambio_records = (
+            session.query(CambioModel)
+            .filter(CambioModel.data >= start_date)
+            .order_by(CambioModel.data)
+            .all()
+        )
+        
+        logging.info(f"Registros filtrados: {len(cambio_records)}")
         
         # Verificar se há registros
         if not cambio_records:
-            logging.warning("Nenhum registro encontrado na tabela CAMBIO")
+            logging.warning("Nenhum registro encontrado na tabela CAMBIO após filtragem")
             return None
         
+        # Imprimir detalhes dos últimos registros
+        for record in cambio_records[-5:]:  # Mostrar os últimos 5 registros
+            logging.info(f"Último registro: Data={record.data}, cambio={record.cambio}")
         
-        # INSERINDO A LOGIA PARA FILTRAR OS 30 DIAS
-
-        # Obter a última data disponível na tabela
-        last_record = session.query(func.max(CambioModel.data)).scalar()
-        
-        if last_record is None:
-            logging.warning("Nenhum registro encontrado na tabela de câmbio.")
-            return None  # Ou você pode retornar uma estrutura padrão
-
-        # Calcular a data inicial como 30 dias antes da última data
-        start_date = last_record - timedelta(days=30)
-
-        # Consulta SQL para buscar dados a partir da data calculada
-        cambio_data = session.query(CambioModel).filter(CambioModel.data >= start_date).order_by(CambioModel.data).all()
-
-
-        # FIM DA LOGIA PARA OS 30 DIAS
-
         # Converter para dicionário
-       
-        # data = {
-        #     'dates': [record.data.strftime('%Y-%m-%d') for record in cambio_records],
-        #     'values': [float(record.cambio) for record in cambio_records],
-        #     'label': 'CAMBIO',
-        #     'unit': '%'
-        # }
-
-        # Processar os resultados
-        data = [record.data.strftime('%Y-%m-%d') for record in cambio_data]
-        values = [record.cambio for record in cambio_data]
-
-
         data = {
-            'dates': data,
-            'values': values,
-            'label': 'CAMBIO',
-            'unit': '%'
+            'dates': [record.data.strftime('%Y-%m-%d') for record in cambio_records],
+            'values': [float(record.cambio) for record in cambio_records],
+            'label': 'CÂMBIO',
+            'unit': 'U$/R$'
         }
-
-                
+        
+        logging.info(f"📊 Dados do Câmbio processados:")
+        logging.info(f"   Primeiro registro: {data['dates'][0]}, valor: {data['values'][0]}")
+        logging.info(f"   Último registro: {data['dates'][-1]}, valor: {data['values'][-1]}")
+        
         return data
     except Exception as e:
         logging.error(f"Erro ao buscar dados da CAMBIO: {e}")

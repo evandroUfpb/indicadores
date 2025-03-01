@@ -618,7 +618,8 @@ function fetchIpcaData(chartId = 'IpcaChartFull', endpoint = '/api/ipca', dynami
 
 function fetchSelicData(chartId = 'SelicChartFull', endpoint = '/api/selic', dynamicRange = true) {
     console.log(`Iniciando busca de dados da SELIC no endpoint: ${endpoint}`);
-    
+
+
     fetch(endpoint)
         .then(response => {
             console.log('Resposta para Selic:', response);
@@ -628,8 +629,16 @@ function fetchSelicData(chartId = 'SelicChartFull', endpoint = '/api/selic', dyn
             return response.json();
         })
         .then(data => {
-            console.log('Dados de Selic recebidos:', data);
-            
+            console.log('Dados de Selic recebidos:',{
+                dates: data.dates,
+                values: data.values,
+                firstDate: data.dates[0],
+                lastDate: data.dates[data.dates.length - 1],
+                firstValue: data.values[0],
+                lastValue: data.values[data.values.length - 1]
+            });
+
+                    
             // Verificar se há dados
             if (!data.dates || data.dates.length === 0) {
                 console.error('Nenhum dado da Selic encontrado');
@@ -686,7 +695,7 @@ function fetchSelicData(chartId = 'SelicChartFull', endpoint = '/api/selic', dyn
                     labels: formattedLabels,
                     datasets: [{
                         label: 'SELIC',
-                        data: data.values,
+                        data: filteredValues,
                         borderColor: 'rgb(135,206,250)',
                         backgroundColor: 'rgba(135,206,250, 0.2)',
                         borderWidth: 2,
@@ -743,7 +752,14 @@ function fetchCambioData(chartId = 'CambioChartFull', endpoint = '/api/cambio') 
             return response.json();
         })
         .then(data => {
-            console.log('Dados de Selic recebidos:', data);
+            console.log('🔍 Dados de Câmbio recebidos:', {
+                dates: data.dates,
+                values: data.values,
+                firstDate: data.dates[0],
+                lastDate: data.dates[data.dates.length - 1],
+                firstValue: data.values[0],
+                lastValue: data.values[data.values.length - 1]
+            });
             
             // Verificar se há dados
             if (!data.dates || data.dates.length === 0) {

@@ -22,6 +22,7 @@ from app.data_apis.conect_post.conect_post_divliq_pb import (
     verificar_dados_divliq
 )
 
+from app.data_apis.conect_post.conect_post_selic import verificar_dados_selic
 
 from app.data_apis.conect_post.conect_post_cambio import verificar_dados_cambio
 
@@ -51,6 +52,9 @@ def popular_e_verificar_dados():
 
         # Verificação de dados de câmbio
         verificar_dados_cambio()
+
+        # População de dados de Selic
+        verificar_dados_selic()
 
         logging.info("Todos os dados foram populados e verificados com sucesso")
     except Exception as e:

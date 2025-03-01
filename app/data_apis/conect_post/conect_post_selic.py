@@ -4,6 +4,7 @@ from app.data_apis.bcb import get_selic_data
 from app.data_apis.conect_post.database import Session, engine
 import logging
 import pandas as pd
+from datetime import datetime, timedelta
 
 
 # Cria modelo para SELCI
@@ -57,20 +58,27 @@ def get_selic_data_from_db():
         connection = session.connection()
         logging.info("Conexão com o banco estabelecida com sucesso")
         
+
+        two_years_ago = datetime.now() - timedelta(days=24*30)
+        logging.info(f"Filtrando registros a partir de: {two_years_ago}")
+
         # Buscar todos os registros ordenados por data
-        selic_records = session.query(SelicModel).order_by(SelicModel.data).all()
-        
-        # Log detalhado
-        logging.info(f"Número de registros encontrados: {len(selic_records)}")
-        
-        # Imprimir detalhes de cada registro
-        for record in selic_records[:5]:  # Mostrar os primeiros 5 registros
-            logging.info(f"Registro: Data={record.data}, selic={record.selic}")
+        selic_records = (
+            session.query(SelicModel)
+            .filter(SelicModel.data >= two_years_ago)
+            .order_by(SelicModel.data).all()
+        )
+
+        logging.info(f"Registros filtrados: {len(selic_records)}")
         
         # Verificar se há registros
         if not selic_records:
             logging.warning("Nenhum registro encontrado na tabela SELIC")
             return None
+        
+        # Imprimir detalhes de cada registro
+        for record in selic_records[-5:]:  # Mostrar os últimos 5 registros
+            logging.info(f"Último registro: Data={record.data}, selic={record.selic}")
         
         # Converter para dicionário
         data = {
@@ -80,9 +88,9 @@ def get_selic_data_from_db():
             'unit': '%'
         }
         
-        # Log dos dados
-        logging.info(f"Datas: {data['dates']}")
-        logging.info(f"Valores: {data['values']}")
+        logging.info(f"📊 Dados da SELIC processados:")
+        logging.info(f"   Primeiro registro: {data['dates'][0]}, valor: {data['values'][0]}")
+        logging.info(f"   Último registro: {data['dates'][-1]}, valor: {data['values'][-1]}")
         
         return data
     except Exception as e:
@@ -93,57 +101,7 @@ def get_selic_data_from_db():
     finally:
         session.close()
 
-# def popular_selic_se_vazia():
-#     session = Session()
-#     try:
-#         # Verificar se a tabela está vazia
-#         count = session.query(SelicModel).count()
-#         if count == 0:
-#             logging.info("Tabela SELIC vazia. Buscando dados...")
-            
-#             # Buscar dados da SELIC
-#             selic_data = get_selic_data()
-            
-#             if selic_data is not None:
-#                 logging.info(f"Dados da SELIC obtidos: {len(selic_data['dates'])} registros")
-                
-#                 # Converter datas e valores para DataFrame
-#                 df = pd.DataFrame({
-#                     'data': pd.to_datetime(selic_data['dates'], format='%Y-%m'),
-#                     'valor': selic_data['values']
-#                 })
-                
-#                 # Inserir dados no banco
-#                 try:
-#                     for index, row in df.iterrows():
-#                         selic_record = SelicModel(data=row['data'], selic=row['valor'])
-#                         session.merge(selic_record)
-                    
-#                     session.commit()
-#                     logging.info("Dados da SELIC populados com sucesso")
-                
-#                 except Exception as e:
-#                     session.rollback()
-#                     logging.error(f"Erro ao inserir dados da SELIC: {e}")
-#             else:
-#                 logging.warning("Não foi possível obter dados da SELIC")
-#         else:
-#             logging.info(f"Tabela SELIC já possui {count} registros")
-    
-#     except Exception as e:
-#         logging.error(f"Erro ao popular dados da SELIC: {e}")
-    
-#     finally:
-#         session.close()
 
-
-# # Chame esta função no seu script de inicialização
-# if __name__ == "__main__":
-#     popular_selic_se_vazia()
-
-
-
-# Verifica e atualiza dados da SELIC    
 
 def verificar_dados_selic():
     """
@@ -192,7 +150,10 @@ def verificar_dados_selic():
                 
                 # Filtrar registros mais recentes que o último
                 if ultimo_registro:
-                    df = df[df['data'] > ultimo_registro.data]
+                    #df = df[df['data'] > ultimo_registro.data]
+                    # Convert ultimo_registro.data to datetime if it's not already
+                    ultimo_data = pd.to_datetime(ultimo_registro.data)
+                    df = df[df['data'] > ultimo_data]
                 
                 # Inserir novos registros
                 if not df.empty:
