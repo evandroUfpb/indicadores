@@ -4,6 +4,7 @@ from app.data_apis.bcb import get_divliq_data
 from app.data_apis.conect_post.database import Session, engine
 import logging
 import pandas as pd
+from datetime import datetime, timedelta
 
 # Cria modelo para DIVLIQ
 Base = declarative_base()
@@ -128,20 +129,43 @@ def get_divliq_data_from_db():
 def verificar_dados_divliq():
     session = Session()
     try:
-        # Contar registros
+        # Buscar o último registro
+        ultimo_registro = session.query(DivLiqModel).order_by(DivLiqModel.data.desc()).first()
+
+        # Definir data de início dinamicamente
+        if ultimo_registro:
+            # Pega a última data e subtrai 10 anos
+            data_inicio = ultimo_registro.data - timedelta(days=365 * 10)
+        else:
+            # Se não há registros, define uma data padrão
+            data_inicio = datetime(2011, 10, 1).date()
+
+        # Buscar dados a partir da data de início
+        divliq_data = get_divliq_data(period_start=data_inicio.strftime('%Y%m%d'))
+        
+        if divliq_data is not None:
+            # Converter para DataFrame
+            df = pd.DataFrame({
+                'data': pd.to_datetime(divliq_data['dates'], format='%Y%m%d'),
+                'divliq': divliq_data['values']
+            })
+            
+            # Inserir dados
+            upsert_divliq_data(df)
+            
+            logging.info(f"Dados de DIVLIQ atualizados. Novos registros: {len(df)}")
+        else:
+            logging.warning("Não foi possível obter dados de DIVLIQ")
+        
+        # Verificar registros após atualização
         count = session.query(DivLiqModel).count()
-        print(f"Número total de registros na tabela DIVLIQ: {count}")
-        
-        # Buscar alguns registros
-        registros = session.query(DivLiqModel).order_by(DivLiqModel.data).limit(5).all()
-        
-        print("\nPrimeiros registros:")
-        for registro in registros:
-            print(f"Data: {registro.data}, DIVLIQ: {registro.divliq}")
+        logging.info(f"Total de registros na tabela DIVLIQ: {count}")
         
         return count > 0
     except Exception as e:
-        print(f"Erro ao verificar dados da DIVLIQ: {e}")
+        logging.error(f"Erro ao verificar dados da DIVLIQ: {e}")
+        import traceback
+        logging.error(traceback.format_exc())
         return False
     finally:
         session.close()

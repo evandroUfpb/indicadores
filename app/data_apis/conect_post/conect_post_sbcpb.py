@@ -4,6 +4,7 @@ from app.data_apis.bcb import get_bcpb_data
 from app.data_apis.conect_post.database import Session, engine
 import logging
 import pandas as pd
+from datetime import date
 
 # Cria modelo para BCPB
 Base = declarative_base()
@@ -123,3 +124,72 @@ def get_bcpb_data_from_db():
         return None
     finally:
         session.close()    
+
+
+
+
+def verificar_e_atualizar_bcpb():
+    """
+    Verifica a necessidade de atualização dos dados do BCPB no banco de dados.
+    
+    Etapas:
+    1. Busca os dados existentes no banco de dados
+    2. Obtém os dados mais recentes da API
+    3. Compara as datas e atualiza se necessário
+    4. Registra logs de todas as ações realizadas
+    """
+    session = Session()
+    try:
+        # Buscar a data mais recente no banco de dados
+        ultima_data_db = session.query(BcPbModel.data).order_by(BcPbModel.data.desc()).first()
+        
+        if ultima_data_db:
+            ultima_data_db = ultima_data_db[0]
+            logging.info(f"Última data no banco de dados: {ultima_data_db}")
+        else:
+            logging.info("Banco de dados de BCPB está vazio")
+            # Se o banco estiver vazio, chama a função de população
+            session.close()
+            popular_bcpb_se_vazia()
+            return
+        
+        # Buscar dados da API
+        bcpb_data = get_bcpb_data()
+        
+        if bcpb_data is None:
+            logging.warning("Não foi possível obter novos dados do BCPB")
+            return
+        
+        # Converter para DataFrame
+        dates = [pd.to_datetime(d, format='%Y%m%d').date() for d in bcpb_data['dates']]
+        df = pd.DataFrame({
+            'data': dates,
+            'bcpb': bcpb_data['values']
+        })
+        
+        # Converter ultima_data_db para date se ainda não for
+        if not isinstance(ultima_data_db, date):
+            ultima_data_db = ultima_data_db.date()
+        
+        # Filtrar apenas dados mais recentes que a última data no banco
+        df_novos = df[df['data'].apply(lambda x: x > ultima_data_db)]
+        
+        if not df_novos.empty:
+            logging.info(f"Encontrados {len(df_novos)} novos registros de BCPB")
+            
+            # Converter de volta para DataFrame com datetime
+            df_novos['data'] = pd.to_datetime(df_novos['data'])
+            
+            upsert_bcpb_data(df_novos)
+            logging.info("Dados de BCPB atualizados com sucesso")
+        else:
+            logging.info("Não há novos dados para atualizar")
+    
+    except Exception as e:
+        logging.error(f"Erro ao verificar e atualizar dados do BCPB: {e}", exc_info=True)
+    finally:
+        session.close()
+
+# Adicionar chamada no bloco de inicialização
+if __name__ == "__main__":
+    verificar_e_atualizar_bcpb()

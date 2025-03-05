@@ -59,13 +59,13 @@ def get_selic_data_from_db():
         logging.info("Conexão com o banco estabelecida com sucesso")
         
 
-        two_years_ago = datetime.now() - timedelta(days=24*30)
-        logging.info(f"Filtrando registros a partir de: {two_years_ago}")
+        three_years_ago = datetime.now() - timedelta(days=36*30)
+        logging.info(f"Filtrando registros a partir de: {three_years_ago}")
 
         # Buscar todos os registros ordenados por data
         selic_records = (
             session.query(SelicModel)
-            .filter(SelicModel.data >= two_years_ago)
+            .filter(SelicModel.data >= three_years_ago)
             .order_by(SelicModel.data).all()
         )
 

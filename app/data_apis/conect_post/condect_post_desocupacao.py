@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from app.data_apis.sidra import get_desocupacao_data
 from app.data_apis.conect_post.database import Session, engine
 import logging
+import pandas as pd
 
 # Criar modelo para Desocupação
 Base = declarative_base()
@@ -112,26 +113,48 @@ if __name__ == "__main__":
 def verificar_dados_desocupacao():
     session = Session()
     try:
-        # Contar registros
-        count = session.query(DesocupacaoModel).count()
-        print(f"Número total de registros na tabela Desocupação: {count}")
+        # Buscar dados mais recentes da API
+        desocupacao_data = get_desocupacao_data()
         
-        # Buscar alguns registros
-        registros = session.query(DesocupacaoModel).order_by(DesocupacaoModel.data).limit(5).all()
+        if desocupacao_data is None:
+            logging.warning("Não foi possível obter dados de desocupação da API")
+            return False
         
-        ## print("\nPrimeiros registros:")
-        ## for registro in registros:
-        ##    print(f"Data: {registro.data}, Desocupação: {registro.desocupacao}")
+        # Converter o DataFrame para lista de dicionários
+        records = [
+            {'data': index, 'desocupacao': row['des']} 
+            for index, row in desocupacao_data.iterrows()
+        ]
         
-        return count > 0
+        # Encontrar o último registro na base de dados
+        ultimo_registro = session.query(DesocupacaoModel).order_by(DesocupacaoModel.data.desc()).first()
+        
+        # Filtrar apenas registros mais novos que o último registro
+        if ultimo_registro:
+            records = [
+                record for record in records 
+                if pd.Timestamp(record['data']).date() > ultimo_registro.data
+            ]
+        
+        # Inserir novos registros
+        for record in records:
+            new_record = DesocupacaoModel(**record)
+            session.add(new_record)
+        
+        session.commit()
+        
+        logging.info(f"Novos registros de Desocupação inseridos: {len(records)}")
+        
+        return len(records) > 0
     except Exception as e:
-        print(f"Erro ao verificar dados de Desocupação: {e}")
+        session.rollback()
+        logging.error(f"Erro ao verificar e atualizar dados de Desocupação: {e}")
         import traceback
-        print(traceback.format_exc())
+        logging.error(traceback.format_exc())
         return False
     finally:
         session.close()
 
 # Chame esta função no seu script de inicialização
 if __name__ == "__main__":
-    verificar_dados_desocupacao()    
+    verificar_dados_desocupacao()

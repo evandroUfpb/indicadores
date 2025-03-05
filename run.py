@@ -10,16 +10,20 @@ logging.basicConfig(level=logging.INFO)
 # Importações consolidadas
 from app.data_apis.conect_post.conect_post import verificar_conexao_e_dados, popular_tabela_pib_se_vazia
 from app.data_apis.conect_post.condect_post_desocupacao import (
-    popular_desocupacao_se_vazia, 
+    #popular_desocupacao_se_vazia, 
     verificar_dados_desocupacao
 )
 from app.data_apis.conect_post.conect_post_desocupacao_pb import (
-    popular_desocupacao_pb_se_vazia, 
+    #popular_desocupacao_pb_se_vazia, 
     verificar_dados_desocupacao_pb
 )
 from app.data_apis.conect_post.conect_post_divliq_pb import (
-    popular_divliq_se_vazia,
+    #popular_divliq_se_vazia,
     verificar_dados_divliq
+)
+
+from app.data_apis.conect_post.conect_post_sbcpb import (
+    verificar_e_atualizar_bcpb
 )
 
 from app.data_apis.conect_post.conect_post_selic import verificar_dados_selic
@@ -36,18 +40,18 @@ def popular_e_verificar_dados():
     try:
         # Verifica conexão e popula dados iniciais
         verificar_conexao_e_dados()
-        popular_tabela_pib_se_vazia()
+        #popular_tabela_pib_se_vazia()
 
         # População de dados de desocupação
-        popular_desocupacao_se_vazia()
+        #popular_desocupacao_se_vazia()
         verificar_dados_desocupacao()
 
         # População de dados de desocupação PB
-        popular_desocupacao_pb_se_vazia()
+        #popular_desocupacao_pb_se_vazia()
         verificar_dados_desocupacao_pb()
 
         # População de dados de dívida líquida
-        popular_divliq_se_vazia()
+        #popular_divliq_se_vazia()
         verificar_dados_divliq()
 
         # Verificação de dados de câmbio
@@ -55,6 +59,9 @@ def popular_e_verificar_dados():
 
         # População de dados de Selic
         verificar_dados_selic()
+
+        # População de dados de Selic
+        verificar_e_atualizar_bcpb()
 
         logging.info("Todos os dados foram populados e verificados com sucesso")
     except Exception as e:

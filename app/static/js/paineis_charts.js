@@ -367,6 +367,11 @@ function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
                             }
                         },
                         y: {
+                            min: 2,
+                            max: 17,
+                            ticks: {
+                                stepSize: 2
+                                        },
                             title: {
                                 display: true,
                                 text: '(%)'
