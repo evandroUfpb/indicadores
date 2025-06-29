@@ -94,37 +94,33 @@ def get_ipca_data_from_db():
     finally:
         session.close()
 
-# def popular_ipca_se_vazia():
-#     session = Session()
-#     try:
-#         # Verificar se a tabela está vazia
-#         count = session.query(IpcaModel).count()
-#         if count == 0:
-#             logging.info("Tabela IPCA vazia. Buscando dados...")
-            
-#             # Buscar dados do IPCA
-#             ipca_data = get_ipca_data()
-            
-#             if ipca_data is not None:
-#                 # Inserir dados no banco
-#                 upsert_ipca_data(ipca_data)
-#                 logging.info("Dados do IPCA populados com sucesso")
-#             else:
-#                 logging.error("Não foi possível buscar dados do IPCA")
-#         else:
-#             logging.info(f"Tabela IPCA já contém {count} registros")
-#     except Exception as e:
-#         logging.error(f"Erro ao popular dados do IPCA: {e}")
-#     finally:
-#         session.close()
 
-
-# # Chame esta função no seu script de inicialização
-# if __name__ == "__main__":
-#     popular_ipca_se_vazia()
-
-
-# Verifica dados do IPCA e atualiza se necessário    
+def comparar_datas(data1, data2):
+    """
+    Compara duas datas, convertendo-as para o mesmo tipo, se necessário.
+    
+    Args:
+        data1: Primeira data (pode ser datetime.date, datetime.datetime ou string)
+        data2: Segunda data (pode ser datetime.date, datetime.datetime ou string)
+        
+    Returns:
+        bool: True se data1 > data2, False caso contrário
+    """
+    from datetime import datetime, date
+    
+    # Converter data1 para datetime.date se necessário
+    if isinstance(data1, str):
+        data1 = datetime.strptime(data1.split(' ')[0], '%Y-%m-%d').date()
+    elif hasattr(data1, 'date'):
+        data1 = data1.date()
+    
+    # Converter data2 para datetime.date se necessário
+    if isinstance(data2, str):
+        data2 = datetime.strptime(data2.split(' ')[0], '%Y-%m-%d').date()
+    elif hasattr(data2, 'date'):
+        data2 = data2.date()
+    
+    return data1 > data2
 
 def verificar_dados_ipca():
     """
@@ -138,76 +134,128 @@ def verificar_dados_ipca():
     Returns:
         bool: True se há registros, False caso contrário
     """
+    logging.info("\n" + "="*80)
+    logging.info(" INICIANDO VERIFICAÇÃO DE DADOS DO IPCA")
+    logging.info("="*80)
+    
     session = Session()
     try:
-        # Contar registros
+        # 1. Verificar registros atuais
         count = session.query(IpcaModel).count()
-        print(f"Número total de registros na tabela Ipca: {count}")
+        logging.info(f" NÚMERO TOTAL DE REGISTROS NA TABELA IPCA: {count}")
         
-        # Buscar alguns registros
-        registros = session.query(IpcaModel).order_by(IpcaModel.data).limit(5).all()
+        # Buscar últimos 5 registros
+        registros = session.query(IpcaModel).order_by(IpcaModel.data.desc()).limit(5).all()
         
-        print("\nPrimeiros registros:")
-        for registro in registros:
-            print(f"Data: {registro.data}, Ipca: {registro.ipca}")
+        logging.info("\n ÚLTIMOS 5 REGISTROS NO BANCO DE DADOS:")
+        for i, registro in enumerate(registros, 1):
+            logging.info(f"   {i}. Data: {registro.data} (tipo: {type(registro.data)}), Ipca: {registro.ipca} (tipo: {type(registro.ipca)})")
         
-        # Verificar a necessidade de atualização
+        # 2. Verificar necessidade de atualização
         ultimo_registro = session.query(IpcaModel).order_by(IpcaModel.data.desc()).first()
-        
-        # Data atual
         data_atual = datetime.now().date()
         
-        # Se não há registros, ou o último registro é de mais de 30 dias atrás
-        if not ultimo_registro or (data_atual - ultimo_registro.data).days >= 30:
-            logging.info("🔄 Iniciando atualização dos dados de IPCA")
-            
-            # Buscar novos dados
-            ipca_data = get_ipca_data()
-            
-            if ipca_data is not None:
-                # Converter datas
-                df = pd.DataFrame({
-                    #'data': pd.to_datetime(ipca_data['dates'], format='%Y-%m-%d'),
-                    'data': pd.to_datetime(ipca_data['dates']).date,
-                    'valor': ipca_data['values']
-                })
-
-                # Log de diagnóstico
-                logging.info(f"Dados recebidos do IPCA: {len(df)} registros")
-                logging.info(f"Primeiro registro: {df.iloc[0]['data']}, Último registro: {df.iloc[-1]['data']}")
-
-                
-                # Filtrar registros mais recentes que o último
-                if ultimo_registro:
-                    df = df[df['data'] > ultimo_registro.data]
-                
-                # Inserir novos registros
-                if not df.empty:
-                    try:
-                        ipca_records = [
-                            IpcaModel(data=row['data'], ipca=row['valor']) 
-                            for _, row in df.iterrows()
-                        ]
-                        
-                        session.bulk_save_objects(ipca_records)
-                        session.commit()
-                        
-                        logging.info(f"✅ Dados do IPCA atualizados: {len(ipca_records)} novos registros")
-                        print(f"✅ Dados do IPCA atualizados: {len(ipca_records)} novos registros")
-                    except Exception as e:
-                        session.rollback()
-                        logging.error(f"❌ Erro ao inserir dados do IPCA: {e}")
-                        print(f"❌ Erro ao inserir dados do IPCA: {e}")
-                else:
-                    logging.info("ℹ️ Nenhum novo dado de IPCA para inserir")
-                    print("ℹ️ Nenhum novo dado de IPCA para inserir")
-            else:
-                logging.warning("❌ Não foi possível obter dados do IPCA")
-                print("❌ Não foi possível obter dados do IPCA")
+        logging.info(f"\n DATA ATUAL: {data_atual} (tipo: {type(data_atual)})")
         
-        return count > 0
+        if ultimo_registro:
+            dias_desde_ultima_atualizacao = (data_atual - ultimo_registro.data).days
+            logging.info(f"  ÚLTIMA ATUALIZAÇÃO: {ultimo_registro.data} (há {dias_desde_ultima_atualizacao} dias)")
+            precisa_atualizar = dias_desde_ultima_atualizacao >= 30
+        else:
+            logging.info("  NENHUM REGISTRO ENCONTRADO NO BANCO DE DADOS.")
+            precisa_atualizar = True
+        
+        if not precisa_atualizar:
+            logging.info("\n  OS DADOS DO IPCA JÁ ESTÃO ATUALIZADOS.")
+            return True
+            
+        # 3. Buscar novos dados
+        logging.info("\n BUSCANDO NOVOS DADOS DO IPCA...")
+        dados_ipca = get_ipca_data(period_start='2000-01-01')
+        
+        if not dados_ipca:
+            logging.error(" FALHA AO OBTER DADOS DO IPCA: Resposta vazia ou inválida")
+            return False
+            
+        if 'dates' not in dados_ipca or 'values' not in dados_ipca:
+            logging.error(f" FORMATO DE DADOS INVÁLIDO: {dados_ipca.keys()}")
+            return False
+            
+        total_registros = len(dados_ipca['dates'])
+        logging.info(f" DADOS OBTIDOS: {total_registros} registros")
+        
+        # 4. Processar dados
+        df = pd.DataFrame({
+            'data': pd.to_datetime(dados_ipca['dates']).date,
+            'valor': pd.to_numeric(dados_ipca['values'], errors='coerce')
+        })
+        
+        # Remover valores nulos
+        df = df.dropna()
+        
+        # Ordenar por data
+        df = df.sort_values('data')
+        
+        # Filtrar apenas registros mais recentes que o último no banco
+        if ultimo_registro:
+            df = df[df['data'] > ultimo_registro.data]
+            
+        if df.empty:
+            logging.info(" NENHUM NOVO REGISTRO PARA INSERIR.")
+            return True
+            
+        # 5. Inserir novos registros
+        logging.info(f"\n PREPARANDO PARA INSERIR {len(df)} NOVOS REGISTROS...")
+        
+        # Log dos primeiros e últimos registros
+        logging.info(" PRIMEIROS 3 REGISTROS:")
+        for i, (_, row) in enumerate(df.head(3).iterrows(), 1):
+            logging.info(f"   {i}. Data: {row['data']}, Valor: {row['valor']}")
+            
+        logging.info(" ÚLTIMOS 3 REGISTROS:")
+        for i, (_, row) in enumerate(df.tail(3).iterrows(), 1):
+            logging.info(f"   {i}. Data: {row['data']}, Valor: {row['valor']}")
+        
+        try:
+            # Inserir em lotes
+            batch_size = 100
+            total_inseridos = 0
+            
+            for i in range(0, len(df), batch_size):
+                batch = df.iloc[i:i + batch_size]
+                registros = [
+                    IpcaModel(data=row['data'], ipca=float(row['valor']))
+                    for _, row in batch.iterrows()
+                ]
+                
+                session.bulk_save_objects(registros)
+                session.commit()
+                
+                total_inseridos += len(registros)
+                logging.info(f" LOTE {i//batch_size + 1} INSERIDO: {len(registros)} registros")
+            
+            # Verificar inserção
+            novo_total = session.query(IpcaModel).count()
+            ultimo = session.query(IpcaModel).order_by(IpcaModel.data.desc()).first()
+            
+            logging.info("\n ATUALIZAÇÃO CONCLUÍDA COM SUCESSO!")
+            logging.info(f" TOTAL DE REGISTROS: {novo_total} (antes: {count})")
+            logging.info(f" REGISTROS INSERIDOS: {total_inseridos}")
+            
+            if ultimo:
+                logging.info(f" ÚLTIMO REGISTRO: {ultimo.data} = {ultimo.ipca}%")
+            
+            return True
+            
+        except Exception as e:
+            session.rollback()
+            logging.error(f" ERRO AO INSERIR DADOS: {str(e)}", exc_info=True)
+            return False
+            
     except Exception as e:
-        print(f"Erro ao verificar dados do Ipca: {e}")
+        logging.error(f" ERRO NA VERIFICAÇÃO DO IPCA: {str(e)}", exc_info=True)
         return False
+        
     finally:
-        session.close()              
+        session.close()
+        logging.info("="*80 + "\n")

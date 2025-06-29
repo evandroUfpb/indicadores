@@ -23,6 +23,19 @@ def etl_pib_job():
     except Exception as e:
         logger.error(f"Erro na ETL de PIB: {e}")
 
+# Para executar manualmente
+if __name__ == "__main__":
+    etl_pib_job()
+
+
+
+# Atualiza PIB_BR
+
+
+
+
+
+
 def start_etl_scheduler():
     # Criar scheduler
     scheduler = BlockingScheduler()
@@ -42,6 +55,3 @@ def start_etl_scheduler():
     except (KeyboardInterrupt, SystemExit):
         pass
 
-# Para executar manualmente
-if __name__ == "__main__":
-    etl_pib_job()

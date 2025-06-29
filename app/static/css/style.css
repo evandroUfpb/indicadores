@@ -1,3 +1,26 @@
+/* Estilo para o banner principal - apenas a primeira seção */
+.hero-banner {
+    position: relative;
+    overflow: hidden;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.hero-banner > .col-12 {
+    position: relative;
+    z-index: 1;
+}
+
+/* Garante que o conteúdo fique acima do fundo */
+.hero-banner .container,
+.hero-banner h1,
+.hero-banner p,
+.hero-banner .btn {
+    position: relative;
+    z-index: 2;
+}
+
 .chart-container {
     height: 300px;
     margin-top: 1rem;
@@ -6,12 +29,24 @@
 .card {
     height: 100%;
     margin-bottom: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(97, 38, 38, 0.1);
 }
 
 .card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 8px rgba(139, 123, 123, 0.2);
     transition: box-shadow 0.3s ease-in-out;
+}
+
+/* Estilo para o cabeçalho dos cards */
+.card .card-header.bg-dark,
+.card-header.bg-dark {
+    background-color: #2c3e50 !important; /* Azul escuro moderno */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Sobrescreve qualquer estilo em linha */
+.card .card-header[class*='bg-'] {
+    background-color: #2c3e50 !important;
 }
 
 .lead {

@@ -72,33 +72,70 @@ def get_ipca_data(period_start=None, period_end=None):
             return None
         
         # Log do conteúdo da resposta para diagnóstico
-        logging.info(f"📊 Conteúdo da resposta de IPCA: {response.text[:500]}...")
+        response_json = response.json()
+        logging.info(f"📊 Conteúdo da resposta de IPCA (primeiros 5 itens): {json.dumps(response_json[:5], ensure_ascii=False, indent=2)}")
+        logging.info(f"📊 Total de itens na resposta: {len(response_json)}")
         
         # Converte para DataFrame
         try:
-            df = pd.DataFrame(response.json())
-        except json.JSONDecodeError as e:
-            logging.error(f"Erro ao decodificar JSON da resposta de IPCA: {e}")
-            logging.error(f"Conteúdo da resposta que causou erro: {response.text}")
+            df = pd.DataFrame(response_json)
+            logging.info(f"📊 DataFrame criado com sucesso. Colunas: {df.columns.tolist()}")
+            logging.info(f"📊 Primeiras 5 linhas do DataFrame:\n{df.head().to_string()}")
+        except Exception as e:
+            logging.error(f"Erro ao criar DataFrame a partir da resposta de IPCA: {e}")
+            logging.error(f"Tipo de dados da resposta: {type(response_json)}")
+            if isinstance(response_json, list) and len(response_json) > 0:
+                logging.error(f"Tipo do primeiro item: {type(response_json[0])}")
+                logging.error(f"Primeiro item: {response_json[0]}")
             return None
         
-        # Converte data e valor
-        df['data'] = pd.to_datetime(df['data'], format="%d/%m/%Y")
-        df['valor'] = pd.to_numeric(df['valor'], errors='coerce')
-        
-        # Remove valores nulos
-        df = df.dropna()
-        
-        # Ordena por data
-        df = df.sort_values('data')
-        
-        # Prepara o resultado para o gráfico
-        result = {
-            'dates': [pd.to_datetime(date).date() for date in df['data']],
-            'values': df['valor'].tolist(),
-            'label': 'IPCA - Índice Nacional de Preços ao Consumidor Amplo',
-            'unit': '%'
-        }
+        try:
+            # Log dos dados brutos para diagnóstico
+            logging.info("📊 Dados brutos antes da conversão:")
+            logging.info(f"Primeira linha: data={df.iloc[0]['data']}, valor={df.iloc[0]['valor']}")
+            logging.info(f"Tipo de dados: data={type(df.iloc[0]['data'])}, valor={type(df.iloc[0]['valor'])}")
+            
+            # Converte a coluna 'data' para datetime
+            if not pd.api.types.is_datetime64_any_dtype(df['data']):
+                df['data'] = pd.to_datetime(df['data'], format='%d/%m/%Y', errors='coerce')
+            
+            # Converte a coluna 'valor' para numérico, tratando vírgula como separador decimal
+            if not pd.api.types.is_numeric_dtype(df['valor']):
+                # Tenta converter para string, substituir vírgula por ponto e depois para float
+                df['valor'] = pd.to_numeric(
+                    df['valor'].astype(str).str.replace(',', '.'), 
+                    errors='coerce'
+                )
+            
+            # Remove linhas com valores nulos
+            initial_count = len(df)
+            df = df.dropna(subset=['data', 'valor'])
+            if len(df) < initial_count:
+                logging.warning(f"⚠️ Removidas {initial_count - len(df)} linhas com valores nulos")
+            
+            # Ordena por data
+            df = df.sort_values('data')
+            
+            # Log dos dados convertidos
+            logging.info("📊 Dados após conversão:")
+            logging.info(f"Primeira linha: data={df.iloc[0]['data']}, valor={df.iloc[0]['valor']}")
+            logging.info(f"Tipo de dados: data={type(df.iloc[0]['data'])}, valor={type(df.iloc[0]['valor'])}")
+            
+            # Prepara o resultado para o gráfico
+            result = {
+                'dates': [d.date() for d in df['data']],  # Converte para date (sem hora)
+                'values': df['valor'].tolist(),
+                'label': 'IPCA - Índice Nacional de Preços ao Consumidor Amplo',
+                'unit': '%'
+            }
+        except Exception as e:
+            logging.error(f"❌ Erro ao processar dados do IPCA: {e}")
+            logging.error(f"Colunas disponíveis: {df.columns.tolist()}")
+            if 'data' in df.columns:
+                logging.error(f"Valores únicos em 'data': {df['data'].unique()[:5]}")
+            if 'valor' in df.columns:
+                logging.error(f"Valores únicos em 'valor': {df['valor'].astype(str).unique()[:5]}")
+            return None
         
         # Log de diagnóstico
         logging.info(f"✅ Dados de IPCA processados:")

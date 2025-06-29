@@ -32,6 +32,39 @@ function formatChartLabels(dates, formatType = 'trimester') {
                 return `${year} - ${monthNames[month - 1]}`;
             });
         
+        case 'yearMonth':
+            return dates.map(date => {
+                const year = date.substring(0, 4);
+                const month = parseInt(date.substring(5, 7), 10);
+                
+                // Array de nomes de meses abreviados
+                const monthNames = [
+                    'Jan', 'Fev', 'Mar', 'Abr', 
+                    'Mai', 'Jun', 'Jul', 'Ago', 
+                    'Set', 'Out', 'Nov', 'Dez'
+                ];
+                
+                // Formatar como "Ano - Mês"
+                return `${year} - ${monthNames[month - 1]}`;
+            });
+        
+        case 'daily':
+            return dates.map(date => {
+                const year = date.substring(0, 4);
+                const month = parseInt(date.substring(5, 7), 10);
+                const day = parseInt(date.substring(8, 10), 10);
+                
+                // Array de nomes de meses abreviados
+                const monthNames = [
+                    'Jan', 'Fev', 'Mar', 'Abr', 
+                    'Mai', 'Jun', 'Jul', 'Ago', 
+                    'Set', 'Out', 'Nov', 'Dez'
+                ];
+                
+                // Formatar como "Ano - Mês - Dia"
+                return `${year} - ${monthNames[month - 1]} - ${day}`;
+            });
+        
         default:
             return dates;
     }
@@ -74,7 +107,40 @@ function fetchPIBData() {
                 return;
             }
 
-            const formattedLabels = formatChartLabels(data.dates, 'trimester');
+
+            // Lógica para definir intervalo dinâmico
+
+            let filteredDates = data.dates;
+            let filteredValues = data.values;
+            
+            // Encontrar a data mais recente
+
+            const lastDate = new Date(Math.max(...data.dates.map(date => new Date(date))));
+
+            // Calcular os últimos 10 anos
+
+            const tenYearsAgo = new Date(lastDate.getFullYear() - 10, lastDate.getMonth(), lastDate.getDate());
+
+            // Filtrar dados
+            const filteredData = data.dates.reduce((acc, date, index) => {
+                const currentDate = new Date(date);
+                if (currentDate >= tenYearsAgo) {
+                    acc.dates.push(date);
+                    acc.values.push(data.values[index]);
+                }
+                return acc;
+            }, { dates: [], values: [] });
+
+            filteredDates = filteredData.dates;
+            filteredValues = filteredData.values;
+            
+            // Fim da lógica para definir intervalo dinâmico
+
+            console.log('🕰️ Dados filtrados:', filteredValues);
+            console.log('🕰️ Datas filtradas:', filteredDates);
+            console.log('🕰️ Valor esperado para 2024-10-01:', filteredValues[filteredDates.indexOf('2024-10-01')] || 'Não encontrado');
+
+            const formattedLabels = formatChartLabels(filteredDates, 'trimester');
             console.log('🏷️ Labels formatados:', formattedLabels);
 
             
@@ -90,41 +156,66 @@ function fetchPIBData() {
 
             const datasets = [{
                 label: 'PIBBR',
-                data: data.values,
+                data: filteredValues, // Usar filteredValues aqui
                 borderWidth: 2,
                 tension: 0.1,
-                // Usar uma função para definir a cor baseada no valor
-                borderColor: data.values.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
-                backgroundColor: data.values.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
+                borderColor: filteredValues.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
+                backgroundColor: filteredValues.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
                 segment: {
                     borderColor: ctx => {
-                        const value = ctx.p0DataIndex !== undefined ? data.values[ctx.p0DataIndex] : 0;
+                        const value = ctx.p0DataIndex !== undefined ? filteredValues[ctx.p0DataIndex] : 0;
                         return value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)';
                     }
                 }
             }];
 
 
+            // const datasets = [{
+            //     label: 'PIBBR',
+            //     data: data.values,
+            //     borderWidth: 2,
+            //     tension: 0.1,
+            //     // Usar uma função para definir a cor baseada no valor
+            //     borderColor: data.values.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
+            //     backgroundColor: data.values.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
+            //     segment: {
+            //         borderColor: ctx => {
+            //             const value = ctx.p0DataIndex !== undefined ? data.values[ctx.p0DataIndex] : 0;
+            //             return value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)';
+            //         }
+            //     }
+            // }];
+
+
+            // window.pibChart = new Chart(ctxChart, {
+            //     type: 'bar',
+            //     data: {
+            //         labels: formattedLabels,
+            //         datasets: [{
+            //             label: 'PIB (%)',
+            //             borderWidth: 2,
+            //             tension: 0.1,
+            //             data: data.values,
+            //             borderColor: data.values.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
+            //             backgroundColor: data.values.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
+            //             segment: {
+            //                 borderColor: ctx => {
+            //                     const value = ctx.p0DataIndex !== undefined ? data.values[ctx.p0DataIndex] : 0;
+            //                     return value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)';
+            //                     }
+            //             }
+                        
+            //         }]
+            //     },
+
             window.pibChart = new Chart(ctxChart, {
                 type: 'bar',
                 data: {
                     labels: formattedLabels,
-                    datasets: [{
-                        label: 'PIB (%)',
-                        borderWidth: 2,
-                        tension: 0.1,
-                        data: data.values,
-                        borderColor: data.values.map(value => value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)'),
-                        backgroundColor: data.values.map(value => value >= 0 ? 'rgba(135,206,250, 0.2)' : 'rgba(255,0,0, 0.2)'),
-                        segment: {
-                            borderColor: ctx => {
-                                const value = ctx.p0DataIndex !== undefined ? data.values[ctx.p0DataIndex] : 0;
-                                return value >= 0 ? 'rgb(135,206,250)' : 'rgb(255,0,0)';
-                                }
-                        }
-                        
-                    }]
+                    datasets: datasets
                 },
+
+
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -134,7 +225,7 @@ function fetchPIBData() {
                         },
                         title: {
                             display: true,
-                            text: 'Brasil: Variação Trimestral do PIB'
+                            text: 'Brasil: Taxa trimestral (em relação ao mesmo período do ano anterior)'
                         }
                     },
                     scales: {
@@ -204,6 +295,7 @@ function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
             console.log('Último elemento das datas:', data.dates[data.dates.length - 1]);
 
 
+           
             const formattedLabels = formatChartLabels(data.dates, 'yearOnly');
 
             console.log('Labels formatadas:', formattedLabels);
@@ -328,6 +420,10 @@ function fetchPIBPBData(chartId = 'pibPBChartFull', endpoint = '/api/pib_pb') {
                 console.log(`🕰️ Dados filtrados de ${tenYearsAgo.toISOString().split('T')[0]} a ${lastDate.toISOString().split('T')[0]}`);
             }
 
+            console.log('🕰️ Dados filtrados:', filteredValues);
+            console.log('🕰️ Datas filtradas:', filteredDates);
+            console.log('🕰️ Valor esperado para 2024-10-01:', filteredValues[filteredDates.indexOf('2024-10-01')] || 'Não encontrado');
+
             const formattedLabels = formatChartLabels(filteredDates, 'yearMonth');
 
             // // Destruir gráfico existente
@@ -441,6 +537,10 @@ function fetchDesocupacaoPbData(chartId = 'desocupacaoPbChartFull', endpoint = '
                 filteredDates = filteredData.dates;
                 filteredValues = filteredData.values;
             }
+
+            console.log('🕰️ Dados filtrados:', filteredValues);
+            console.log('🕰️ Datas filtradas:', filteredDates);
+            console.log('🕰️ Valor esperado para 2024-10-01:', filteredValues[filteredDates.indexOf('2024-10-01')] || 'Não encontrado');
 
             // Formatar labels com trimestre
             // const formattedLabels = formatChartLabels(data.dates, 'trimester');
@@ -567,6 +667,10 @@ function fetchIpcaData(chartId = 'IpcaChartFull', endpoint = '/api/ipca', dynami
                 console.log(`🕰️ Dados filtrados de ${tenYearsAgo.toISOString().split('T')[0]} a ${lastDate.toISOString().split('T')[0]}`);
             }
 
+            console.log('🕰️ Dados filtrados:', filteredValues);
+            console.log('🕰️ Datas filtradas:', filteredDates);
+            console.log('🕰️ Valor esperado para 2024-10-01:', filteredValues[filteredDates.indexOf('2024-10-01')] || 'Não encontrado');
+
             const formattedLabels = formatChartLabels(filteredDates, 'yearMonth');
 
             window.ipcaChart = new Chart(ctx, {
@@ -685,6 +789,10 @@ function fetchSelicData(chartId = 'SelicChartFull', endpoint = '/api/selic', dyn
 
                 console.log(`🕰️ Dados filtrados de ${tenYearsAgo.toISOString().split('T')[0]} a ${lastDate.toISOString().split('T')[0]}`);
             }
+
+            console.log('🕰️ Dados filtrados:', filteredValues);
+            console.log('🕰️ Datas filtradas:', filteredDates);
+            console.log('🕰️ Valor esperado para 2024-10-01:', filteredValues[filteredDates.indexOf('2024-10-01')] || 'Não encontrado');
 
             // Fim da lógica para intervalo dinâmico
 
@@ -884,6 +992,10 @@ function fetchBcpbData(chartId = 'BcpbChartFull', endpoint = '/api/bcpb') {
                 return;
             }
 
+            console.log('🕰️ Dados filtrados:', filteredValues);
+            console.log('🕰️ Datas filtradas:', filteredDates);
+            console.log('🕰️ Valor esperado para 2024-10-01:', filteredValues[filteredDates.indexOf('2024-10-01')] || 'Não encontrado');
+
             // Formatar labels mensais
             const formattedLabels = formatChartLabels(filteredDates, 'monthly');
 
@@ -1024,6 +1136,10 @@ function fetchDivpubData(chartId = 'dividaPbChartFull', endpoint = '/api/divpub'
                 console.log(`🕰️ Dados filtrados de ${tenYearsAgo.toISOString().split('T')[0]} a ${lastDate.toISOString().split('T')[0]}`);
             }
 
+
+            console.log('🕰️ Dados filtrados:', filteredValues);
+            console.log('🕰️ Datas filtradas:', filteredDates);
+            console.log('🕰️ Valor esperado para 2024-10-01:', filteredValues[filteredDates.indexOf('2024-10-01')] || 'Não encontrado');
 
             //const formattedLabels = formatChartLabels(data.dates, 'monthly');
             const formattedLabels = formatChartLabels(filteredDates, 'yearMonth');

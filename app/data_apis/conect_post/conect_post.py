@@ -118,6 +118,10 @@ if __name__ == "__main__":
     popular_tabela_pib()               
 
 
+
+
+
+
 # No final do arquivo conect_post.py
 def verificar_conexao_e_dados():
     session = Session()
