@@ -27,6 +27,10 @@ def init_routes(app):
     def about():
         return render_template('about.html')
 
+    @app.route('/projetos')
+    def projetos():
+        return render_template('projetos.html')
+
     @app.route('/painel_brasil')
     def painel_brasil():
         return render_template('painel_brasil.html')

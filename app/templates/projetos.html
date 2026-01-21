@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+.card-title {
+    font-size: 1.1rem !important;
+    font-weight: 600;
+}
+.card-text {
+    font-size: 0.9rem !important;
+    line-height: 1.4;
+}
+</style>
+<div class="container">
+    <h2 class="text-center mb-5">Projetos e Publicações</h2>
+    
+    <div class="row mb-5">
+        <!-- Primeiro conteúdo - Livro -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-img-top text-center p-3">
+                    <img src="{{ url_for('static', filename='images/fcf.png') }}" 
+                         alt=" " 
+                         style="max-width: 100%; max-height: 300px; object-fit: contain;">
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Oásis de Cabaceiras: Um novo olhar para o Semiárido</h5>
+                    <p class="card-text">O projeto "OASIS de Cabaceiras" (Organizações de Arranjos Socioeconômicos
+Sustentáveis) é uma iniciativa estratégica e integrada que visa combater o processo de
+desertificação e promover o desenvolvimento sustentável no município de Cabaceiras no Estado da Paraíba.
+Reconhecendo as vulnerabilidades ambientais e socioeconômicas do município, todas inseridas no
+bioma Caatinga e historicamente afetadas pela escassez hídrica e degradação do solo, este projeto
+propõe a implementação de um parque agroflorestal e a adoção de práticas resilientes para a
+convivência sustentável com o semiárido.</p>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('static', filename='img/Paraíba-Desafios-ao-Desenvolvimento-Final.pdf') }}" 
+                           class="btn btn-primary" 
+                           download>
+                            <i class="fas fa-download"></i> Baixar PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Segundo conteúdo - Vídeo -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="embed-responsive embed-responsive-16by9 d-flex justify-content-center align-items-center p-3">
+                    <iframe 
+                        class="card-img-top embed-responsive-item" 
+                        src="https://www.youtube.com/embed/9NUA4K5WVoU" 
+                        style="max-width: 60%; max-height: 300px; width: 300px; height: 200px;"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title text-center">Programa Economia em Alta: As Perspectivas econômicas para 2025</h5>
+                    <p class="card-text text-center">Entrevista com o Economista Francisco Barros, sócio do Forúm Celso Furtado de Desenvolvimento da Paraíba.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Terceiro conteúdo - Artigo -->
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-img-top text-center p-3">
+                    <img src="{{ url_for('static', filename='images/mapa_paraiba.png') }}" 
+                         alt="Imagem do Artigo" 
+                         style="max-width: 70%; max-height: 300px; object-fit: contain;">
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Desigualdade de Renda: Uma análise para as mesorregiões e microrregiões do Estado da Paraíba</h5>
+                    <p class="card-text">O presente estudo teve como propósito analisar as desigualdades de renda entre os municípios, as mesorregiões e as microrregiões
+                        do estado da Paraíba, para os anos de 2010 e 2021. Analisou-se a distribuição espacial do PIB e do PIB per capita, medindo a concentração e dispersão
+                        pelo método do Coeficiente de Variação Ponderado de Williamson.<a href="https://evandroufpb.github.io/cw_paraiba/index.html" 
+                        class="text-primary" 
+                        target="_blank"> Acesse o texto aqui...</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Seção de apresentação -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Sobre as Publicações</h3>
+                    <p class="card-text">
+                        Aqui você encontrará uma seleção de publicações, incluindo livros, artigos e 
+                        conteúdos em vídeo sobre o desenvolvimento regional e da Paraíba. Meu objetivo é 
+                        compartilhar conhecimentos e insights sobre os desafios para o desenvolvimento
+                        do Nordeste e, em especial, da Paraíba.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
