@@ -19,22 +19,25 @@
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-img-top text-center p-3">
-                    <img src="{{ url_for('static', filename='images/fcf.png') }}" 
+                    <img src="{{ url_for('static', filename='images/fig_proj_oasis_02.png') }}" 
                          alt=" " 
                          style="max-width: 100%; max-height: 300px; object-fit: contain;">
                 </div>
                 <div class="card-body">
                     <h5 class="card-title">Oásis de Cabaceiras: Um novo olhar para o Semiárido</h5>
                     <p class="card-text">O projeto "OASIS de Cabaceiras" (Organizações de Arranjos Socioeconômicos
-Sustentáveis) é uma iniciativa estratégica e integrada que visa combater o processo de
+Sustentáveis)
+<a href="{{ url_for('static', filename='images/folder_projeto_atualizado.pdf') }}" 
+                        class="text-primary" 
+                        target="_blank"> (...)</a> é uma iniciativa estratégica e integrada que visa combater o processo de
 desertificação e promover o desenvolvimento sustentável no município de Cabaceiras no Estado da Paraíba.
 Reconhecendo as vulnerabilidades ambientais e socioeconômicas do município, todas inseridas no
 bioma Caatinga e historicamente afetadas pela escassez hídrica e degradação do solo, este projeto
 propõe a implementação de um parque agroflorestal e a adoção de práticas resilientes para a
 convivência sustentável com o semiárido.</p>
                     <div class="text-center mt-3">
-                        <a href="{{ url_for('static', filename='img/Paraíba-Desafios-ao-Desenvolvimento-Final.pdf') }}" 
-                           class="btn btn-primary" 
+                        <a href="{{ url_for('static', filename='documentos/oasis_cabaceiras_v08.pdf') }}" 
+                           class="btn btn-success" 
                            download>
                             <i class="fas fa-download"></i> Baixar PDF
                         </a>
